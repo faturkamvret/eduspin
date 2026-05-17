@@ -6,19 +6,36 @@ import type {
   AppSettings,
   ChildProfile,
   Collection,
+  Collectible,
+  Gender,
   PullHistory,
   PullResult,
   QuizCategoryId,
   QuizStats,
+  Rarity,
   Wallet,
 } from '@/types';
 import { performPull } from '@/lib/gacha';
+import { getCollectibleById } from '@/data/collectibles';
 
 const COIN_PER_CORRECT = 1;
 const COIN_BONUS_PER_SESSION = 5;
 const COIN_DAILY_BONUS = 5;
 const COIN_PER_PULL = 10;
 const DAILY_BONUS_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Shop pricing per rarity.
+ * Only Common & Rare are sold; Epic & Legendary remain claw-machine exclusive.
+ */
+export const SHOP_PRICES: Partial<Record<Rarity, number>> = {
+  common: 15,
+  rare: 40,
+};
+
+export function getShopPrice(item: Collectible): number | null {
+  return SHOP_PRICES[item.rarity] ?? null;
+}
 
 export type SyncStatus = 'disabled' | 'connecting' | 'syncing' | 'synced' | 'offline' | 'error';
 
@@ -51,8 +68,8 @@ export interface AppState {
    */
   hydrateFromCloud: (snapshot: CloudSnapshot) => void;
 
-  setProfile: (nickname: string, age: number) => void;
-  updateProfile: (patch: Partial<Pick<ChildProfile, 'nickname' | 'age'>>) => void;
+  setProfile: (nickname: string, age: number, gender: Gender) => void;
+  updateProfile: (patch: Partial<Pick<ChildProfile, 'nickname' | 'age' | 'gender'>>) => void;
   resetProfile: () => void;
 
   recordAnswer: (categoryId: QuizCategoryId, correct: boolean) => void;
@@ -65,6 +82,19 @@ export interface AppState {
   performGachaPull: () =>
     | { ok: true; result: PullResult }
     | { ok: false; reason: 'not-enough-coins' };
+
+  /**
+   * Buy a collectible from the shop.
+   * Refuses if: item not for sale (Epic/Legendary), already owned, or insufficient coins.
+   */
+  buyCollectible: (
+    collectibleId: string,
+  ) =>
+    | { ok: true; price: number; item: Collectible }
+    | {
+        ok: false;
+        reason: 'not-for-sale' | 'already-owned' | 'not-enough-coins' | 'unknown-item';
+      };
 
   setMuted: (muted: boolean) => void;
 }
@@ -134,15 +164,16 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      setProfile: (nickname, age) => {
+      setProfile: (nickname, age, gender) => {
         const now = Date.now();
         const trimmed = nickname.trim().slice(0, 20);
-        const safeAge = Math.max(3, Math.min(10, Math.round(age)));
+        const safeAge = Math.max(1, Math.min(6, Math.round(age)));
         set({
           profile: {
             uid: get().profile?.uid ?? `local-${now}`,
             nickname: trimmed,
             age: safeAge,
+            gender,
             createdAt: get().profile?.createdAt ?? now,
             updatedAt: now,
           },
@@ -160,8 +191,9 @@ export const useAppStore = create<AppState>()(
               ? { nickname: patch.nickname.trim().slice(0, 20) }
               : {}),
             ...(patch.age !== undefined
-              ? { age: Math.max(3, Math.min(10, Math.round(patch.age))) }
+              ? { age: Math.max(1, Math.min(6, Math.round(patch.age))) }
               : {}),
+            ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
             updatedAt: now,
           },
         });
@@ -247,12 +279,17 @@ export const useAppStore = create<AppState>()(
         if (wallet.coins < COIN_PER_PULL) {
           return { ok: false, reason: 'not-enough-coins' };
         }
+        const profile = get().profile;
+        const gender = profile?.gender ?? 'boy';
         const pity = get().pity;
-        const { result, nextState } = performPull({
-          totalPulls: pity.totalPulls,
-          pityCounterEpic: pity.pityCounterEpic,
-          pityCounterLegendary: pity.pityCounterLegendary,
-        });
+        const { result, nextState } = performPull(
+          {
+            totalPulls: pity.totalPulls,
+            pityCounterEpic: pity.pityCounterEpic,
+            pityCounterLegendary: pity.pityCounterLegendary,
+          },
+          gender,
+        );
 
         const now = Date.now();
         const collection = get().collection;
@@ -278,6 +315,41 @@ export const useAppStore = create<AppState>()(
         });
 
         return { ok: true, result };
+      },
+
+      buyCollectible: (collectibleId) => {
+        const item = getCollectibleById(collectibleId);
+        if (!item) return { ok: false, reason: 'unknown-item' };
+
+        const price = SHOP_PRICES[item.rarity];
+        if (price === undefined) return { ok: false, reason: 'not-for-sale' };
+
+        const collection = get().collection;
+        if (collection.items[collectibleId]) {
+          return { ok: false, reason: 'already-owned' };
+        }
+
+        const wallet = get().wallet;
+        if (wallet.coins < price) {
+          return { ok: false, reason: 'not-enough-coins' };
+        }
+
+        const now = Date.now();
+        set({
+          wallet: {
+            ...wallet,
+            coins: wallet.coins - price,
+            updatedAt: now,
+          },
+          collection: {
+            items: {
+              ...collection.items,
+              [collectibleId]: { count: 1, firstPulledAt: now },
+            },
+            updatedAt: now,
+          },
+        });
+        return { ok: true, price, item };
       },
 
       setMuted: (muted) => set({ settings: { ...get().settings, muted } }),

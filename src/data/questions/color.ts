@@ -4,8 +4,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-1',
     category: 'color',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Apa warna apel ini?',
     visual: '🍎',
@@ -19,8 +19,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-2',
     category: 'color',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Apa warna langit cerah?',
     visual: '☁️',
@@ -34,8 +34,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-3',
     category: 'color',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Apa warna daun?',
     visual: '🌿',
@@ -49,8 +49,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-4',
     category: 'color',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Apa warna pisang?',
     visual: '🍌',
@@ -64,8 +64,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-5',
     category: 'color',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 2,
+    ageMax: 4,
     difficulty: 2,
     prompt: 'Apa warna jeruk?',
     visual: '🍊',
@@ -79,8 +79,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-6',
     category: 'color',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 2,
+    ageMax: 4,
     difficulty: 2,
     prompt: 'Apa warna terong?',
     visual: '🍆',
@@ -94,8 +94,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-7',
     category: 'color',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 3,
+    ageMax: 5,
     difficulty: 2,
     prompt: 'Salju berwarna?',
     visual: '❄️',
@@ -109,8 +109,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-8',
     category: 'color',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 2,
     prompt: 'Warna apa hasil mencampur merah dan kuning?',
     options: [
@@ -123,8 +123,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-9',
     category: 'color',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 2,
     prompt: 'Warna apa hasil mencampur biru dan kuning?',
     options: [
@@ -137,8 +137,8 @@ export const COLOR_QUESTIONS: QuizQuestion[] = [
   {
     id: 'color-10',
     category: 'color',
-    ageMin: 6,
-    ageMax: 8,
+    ageMin: 5,
+    ageMax: 6,
     difficulty: 3,
     prompt: 'Warna apa hasil mencampur merah dan biru?',
     options: [

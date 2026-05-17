@@ -4,8 +4,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-1',
     category: 'animal',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Hewan apa yang suka berkata "guk guk"?',
     options: [
@@ -18,8 +18,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-2',
     category: 'animal',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Hewan apa yang suka berkata "meong"?',
     options: [
@@ -32,8 +32,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-3',
     category: 'animal',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Mana hewan yang hidup di air?',
     options: [
@@ -46,8 +46,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-4',
     category: 'animal',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Hewan apa yang punya belalai panjang?',
     options: [
@@ -60,8 +60,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-5',
     category: 'animal',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 2,
+    ageMax: 4,
     difficulty: 2,
     prompt: 'Siapa raja hutan?',
     options: [
@@ -74,8 +74,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-6',
     category: 'animal',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 2,
+    ageMax: 4,
     difficulty: 2,
     prompt: 'Hewan apa yang bisa terbang?',
     options: [
@@ -88,8 +88,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-7',
     category: 'animal',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 3,
+    ageMax: 5,
     difficulty: 2,
     prompt: 'Hewan apa yang suka makan wortel?',
     options: [
@@ -102,8 +102,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-8',
     category: 'animal',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 2,
     prompt: 'Bayi katak disebut?',
     options: [
@@ -116,8 +116,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-9',
     category: 'animal',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 2,
     prompt: 'Mana hewan yang berleher panjang?',
     options: [
@@ -130,8 +130,8 @@ export const ANIMAL_QUESTIONS: QuizQuestion[] = [
   {
     id: 'animal-10',
     category: 'animal',
-    ageMin: 6,
-    ageMax: 8,
+    ageMin: 5,
+    ageMax: 6,
     difficulty: 3,
     prompt: 'Hewan mamalia laut yang sangat besar?',
     options: [

@@ -2,33 +2,51 @@
 
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
+import { sfx } from '@/lib/sfx';
+import { FloatingDeco } from '@/components/FloatingDeco';
 
 interface Props {
   title: string;
   children: ReactNode;
   showBack?: boolean;
   right?: ReactNode;
+  /** Show floating deco bg. Default true. */
+  deco?: boolean;
 }
 
-export function PageShell({ title, children, showBack = true, right }: Props) {
+export function PageShell({
+  title,
+  children,
+  showBack = true,
+  right,
+  deco = true,
+}: Props) {
   const router = useRouter();
   return (
-    <main className="flex flex-1 flex-col gap-4 px-4 py-4">
-      <header className="flex items-center justify-between">
+    <main className="relative flex flex-1 flex-col gap-4 px-4 py-4">
+      {deco && <FloatingDeco count={10} />}
+      <header className="flex items-center justify-between gap-2">
         {showBack ? (
-          <button
+          <motion.button
             type="button"
-            onClick={() => router.back()}
-            className="rounded-full bg-white/70 px-3 py-1.5 text-sm font-semibold shadow"
+            whileTap={{ scale: 0.92 }}
+            onClick={() => {
+              sfx.click();
+              router.back();
+            }}
+            className="rounded-full bg-white px-4 py-2 font-display text-sm font-bold shadow-kid transition-all hover:bg-slate-50"
             aria-label="Kembali"
           >
             ← Kembali
-          </button>
+          </motion.button>
         ) : (
           <span />
         )}
-        <h1 className="font-display text-xl font-bold text-slate-800">{title}</h1>
-        <div>{right}</div>
+        <h1 className="font-display text-xl font-extrabold text-slate-800 drop-shadow">
+          {title}
+        </h1>
+        <div>{right ?? <span className="block w-12" />}</div>
       </header>
       {children}
     </main>

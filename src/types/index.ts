@@ -2,6 +2,18 @@
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
+/**
+ * Child gender — affects collectible filtering (strict).
+ * - 'boy'  → can only get items tagged 'boy' or 'unisex'
+ * - 'girl' → can only get items tagged 'girl' or 'unisex'
+ * Backwards-compat: profiles without gender default to 'unisex' behaviour
+ * (no filtering) until parent picks one.
+ */
+export type Gender = 'boy' | 'girl';
+
+/** Gender tag on each collectible for filtering. */
+export type CollectibleGender = 'boy' | 'girl' | 'unisex';
+
 export type QuizCategoryId = 'shape' | 'color' | 'animal' | 'counting';
 
 export interface QuizCategoryMeta {
@@ -45,6 +57,8 @@ export interface Collectible {
   name: string;
   category: CollectibleCategory;
   rarity: Rarity;
+  /** Gender targeting: 'boy' | 'girl' | 'unisex'. Strict filter by child gender. */
+  gender: CollectibleGender;
   /** Emoji used as visual placeholder in MVP */
   emoji: string;
   /** Tailwind gradient classes for capsule background */
@@ -59,6 +73,8 @@ export interface ChildProfile {
   uid: string;
   nickname: string;
   age: number;
+  /** Child gender — affects collectible pool filtering */
+  gender: Gender;
   createdAt: number;
   updatedAt: number;
 }

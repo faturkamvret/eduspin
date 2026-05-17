@@ -7,6 +7,9 @@ import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
 import { CoinBadge } from '@/components/CoinBadge';
 import { SyncBadge } from '@/components/SyncBadge';
+import { Confetti } from '@/components/Confetti';
+import { Mascot } from '@/components/Mascot';
+import { FloatingDeco } from '@/components/FloatingDeco';
 import { sfx } from '@/lib/sfx';
 import { COLLECTIBLES } from '@/data/collectibles';
 
@@ -26,6 +29,7 @@ function Inner() {
   const claimDailyBonus = useAppStore((s) => s.claimDailyBonus);
 
   const [bonusMsg, setBonusMsg] = useState<string | null>(null);
+  const [confetti, setConfetti] = useState(false);
 
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
@@ -44,23 +48,28 @@ function Inner() {
     const r = claimDailyBonus();
     if (r.ok) {
       sfx.coin();
-      setBonusMsg(`Yeay! Kamu dapat +${r.coinsAdded} koin hari ini! 🪙`);
+      setConfetti(true);
+      setTimeout(() => setConfetti(false), 1500);
+      setBonusMsg(`Yeay! Kamu dapat +${r.coinsAdded} koin hari ini! 🪙✨`);
       setTimeout(() => setBonusMsg(null), 2500);
     } else {
       sfx.click();
       const hours = Math.max(1, Math.ceil((r.nextEligibleAt - Date.now()) / 3_600_000));
-      setBonusMsg(`Bonus harian sudah diambil. Datang lagi ya dalam ${hours} jam!`);
+      setBonusMsg(`Bonus harian sudah diambil. Datang lagi dalam ${hours} jam ya! 😊`);
       setTimeout(() => setBonusMsg(null), 2500);
     }
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-4 px-4 py-4">
+    <main className="relative flex flex-1 flex-col gap-4 px-4 py-4">
+      <FloatingDeco count={14} gender={profile.gender} />
+      <Confetti show={confetti} count={40} />
+
       {/* Header */}
       <header className="flex items-center justify-between">
         <button
           type="button"
-          className="rounded-full bg-white/70 px-3 py-1.5 text-sm font-bold shadow"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-kid transition-all active:scale-90 hover:bg-slate-50"
           onClick={() => {
             sfx.click();
             router.push('/settings');
@@ -69,93 +78,102 @@ function Inner() {
         >
           ⚙️
         </button>
-        <h1 className="font-display text-xl font-bold text-slate-800">
-          Halo, {profile.nickname}!
-        </h1>
         <CoinBadge coins={wallet.coins} />
       </header>
 
-      <div className="flex justify-end">
-        <SyncBadge />
-      </div>
-
-      {/* Greeting card */}
+      {/* Greeting + mascot */}
       <motion.section
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card text-center"
+        className="card flex flex-col items-center gap-3 text-center"
       >
-        <div className="mb-2 text-5xl animate-bounce-soft" aria-hidden>
-          🎡
-        </div>
-        <p className="font-display text-lg font-semibold">
-          Yuk lanjut belajar sambil bermain!
-        </p>
-        <p className="mt-1 text-sm text-slate-600">
+        <Mascot mood="happy" bubble={`Hai, ${profile.nickname}!`} size="text-7xl" />
+        <h1 className="font-display text-3xl font-extrabold text-rainbow drop-shadow">
+          Selamat Datang!
+        </h1>
+        <p className="font-display text-sm font-bold text-slate-600">
           Koleksi:{' '}
-          <span className="font-bold text-accent-600">
+          <span className="text-accent-600">
             {ownedCount}/{totalCollectibles}
-          </span>
+          </span>{' '}
+          🏆
         </p>
+        <SyncBadge />
       </motion.section>
 
       {/* Daily bonus */}
-      <button
+      <motion.button
         type="button"
         onClick={handleDaily}
-        className={`card flex items-center gap-3 text-left transition-all ${
-          canClaim ? 'ring-2 ring-amber-300 hover:scale-[1.01]' : 'opacity-70'
+        whileTap={{ scale: 0.97 }}
+        whileHover={canClaim ? { scale: 1.02 } : undefined}
+        className={`menu-card overflow-hidden text-left ${
+          canClaim ? '' : 'opacity-75'
         }`}
+        style={{
+          background: canClaim
+            ? 'linear-gradient(135deg, #fde047 0%, #facc15 50%, #eab308 100%)'
+            : 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
+        }}
         aria-label="Klaim bonus harian"
       >
-        <div className="text-4xl" aria-hidden>
+        <motion.div
+          animate={canClaim ? { rotate: [-10, 10, -10], scale: [1, 1.08, 1] } : {}}
+          transition={{ repeat: Infinity, duration: 1.6 }}
+          className="text-6xl drop-shadow"
+          aria-hidden
+        >
           {canClaim ? '🎁' : '✅'}
-        </div>
+        </motion.div>
         <div className="flex-1">
-          <div className="font-display font-bold">
-            {canClaim ? 'Bonus Harian Siap!' : 'Bonus Harian Sudah Diklaim'}
+          <div className="font-display text-xl font-extrabold text-amber-900 drop-shadow">
+            {canClaim ? 'Bonus Harian Siap!' : 'Sudah Diklaim Hari Ini'}
           </div>
-          <div className="text-sm text-slate-600">
+          <div className="text-sm font-bold text-amber-800">
             {canClaim
               ? `Klaim +${COIN_CONSTANTS.COIN_DAILY_BONUS} koin gratis 🪙`
-              : 'Datang lagi besok ya!'}
+              : 'Datang lagi besok ya! ☀️'}
           </div>
         </div>
-      </button>
+      </motion.button>
 
       {bonusMsg && (
-        <div className="rounded-2xl bg-amber-100 px-4 py-2 text-center text-sm font-semibold text-amber-800">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-3xl bg-gradient-to-r from-amber-100 to-yellow-100 px-5 py-3 text-center font-display text-sm font-bold text-amber-800 shadow-kid"
+        >
           {bonusMsg}
-        </div>
+        </motion.div>
       )}
 
-      {/* Main menu */}
-      <nav className="grid grid-cols-1 gap-3">
+      {/* Main menu — 3 big tappy cards */}
+      <nav className="grid grid-cols-1 gap-4">
         <MenuButton
           emoji="📚"
           title="Main Kuis"
-          subtitle="Jawab soal, dapat koin"
-          color="from-emerald-300 to-teal-300"
+          subtitle="Jawab soal seru, dapat koin!"
+          gradient="linear-gradient(135deg, #86efac 0%, #4ade80 50%, #22c55e 100%)"
           onClick={() => router.push('/quiz')}
         />
         <MenuButton
-          emoji="🎰"
-          title="Claw Machine"
-          subtitle={`Tarik 1x = ${COIN_CONSTANTS.COIN_PER_PULL} koin`}
-          color="from-pink-300 to-rose-300"
-          onClick={() => router.push('/claw')}
+          emoji="🛍️"
+          title="Toko Hadiah"
+          subtitle="Beli koleksi & mainkan claw machine!"
+          gradient="linear-gradient(135deg, #ff8fa3 0%, #ff5d7a 50%, #f472b6 100%)"
+          onClick={() => router.push('/shop')}
         />
         <MenuButton
           emoji="📔"
           title="Buku Koleksi"
-          subtitle={`${ownedCount} dari ${totalCollectibles} terkumpul`}
-          color="from-violet-300 to-fuchsia-300"
+          subtitle={`${ownedCount} dari ${totalCollectibles} terkumpul ✨`}
+          gradient="linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #8b5cf6 100%)"
           onClick={() => router.push('/collection')}
         />
       </nav>
 
-      <footer className="mt-auto pt-4 text-center text-xs text-slate-500">
-        EduSpin · Belajar terasa seperti bermain
+      <footer className="mt-auto pt-4 text-center text-xs font-bold text-slate-500">
+        EduSpin · Belajar terasa seperti bermain 🎡
       </footer>
     </main>
   );
@@ -165,37 +183,44 @@ function MenuButton({
   emoji,
   title,
   subtitle,
-  color,
+  gradient,
   onClick,
 }: {
   emoji: string;
   title: string;
   subtitle: string;
-  color: string;
+  gradient: string;
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
+      whileTap={{ scale: 0.96 }}
+      whileHover={{ scale: 1.03 }}
       onClick={() => {
         sfx.click();
         onClick();
       }}
-      className={`flex items-center gap-4 rounded-3xl bg-gradient-to-br ${color}
-                  p-4 text-left shadow-lg transition-all active:scale-[0.98] hover:scale-[1.02]`}
+      className="menu-card relative overflow-hidden text-white"
+      style={{ background: gradient }}
     >
-      <div className="text-5xl" aria-hidden>
+      <motion.div
+        animate={{ y: [0, -6, 0], rotate: [-4, 4, -4] }}
+        transition={{ repeat: Infinity, duration: 2.2 }}
+        className="text-6xl drop-shadow-lg"
+        aria-hidden
+      >
         {emoji}
-      </div>
+      </motion.div>
       <div className="flex-1">
-        <div className="font-display text-xl font-bold text-white drop-shadow">
+        <div className="font-display text-2xl font-extrabold drop-shadow">
           {title}
         </div>
-        <div className="text-sm font-semibold text-white/90">{subtitle}</div>
+        <div className="text-sm font-bold opacity-95">{subtitle}</div>
       </div>
-      <div className="text-2xl text-white" aria-hidden>
+      <div className="text-3xl font-extrabold opacity-90" aria-hidden>
         →
       </div>
-    </button>
+    </motion.button>
   );
 }

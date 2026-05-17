@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,37 +13,135 @@
   body {
     @apply font-body text-slate-800 antialiased;
     background:
-      radial-gradient(circle at 10% 0%, #fde68a 0%, transparent 40%),
-      radial-gradient(circle at 90% 100%, #c4b5fd 0%, transparent 40%),
-      linear-gradient(135deg, #fff7ed 0%, #fef3c7 50%, #f5f3ff 100%);
+      radial-gradient(circle at 15% 0%, #ffe0a3 0%, transparent 35%),
+      radial-gradient(circle at 85% 5%, #c4b5fd 0%, transparent 32%),
+      radial-gradient(circle at 50% 95%, #bae3ff 0%, transparent 35%),
+      radial-gradient(circle at 0% 70%, #ffc6d4 0%, transparent 30%),
+      linear-gradient(135deg, #fff7ed 0%, #fef3c7 30%, #fce7f3 70%, #f5f3ff 100%);
+    background-attachment: fixed;
     min-height: 100vh;
   }
 
   button {
     @apply select-none;
   }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @layer components {
+  /* ─── Kid-friendly buttons ─── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-semibold
-           shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 font-display
+           text-base font-bold transition-all active:scale-95 active:translate-y-1
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+           disabled:active:translate-y-0;
+    min-height: 56px;
   }
   .btn-primary {
-    @apply btn bg-primary-500 text-white hover:bg-primary-600;
+    @apply btn text-white shadow-kid-pink;
+    background: linear-gradient(135deg, #ff8fa3 0%, #ff5d7a 50%, #ff3d63 100%);
+  }
+  .btn-primary:hover {
+    @apply scale-[1.02];
   }
   .btn-accent {
-    @apply btn bg-accent-500 text-white hover:bg-accent-600;
+    @apply btn text-white shadow-kid-violet;
+    background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #8b5cf6 100%);
+  }
+  .btn-mint {
+    @apply btn text-white shadow-kid-mint;
+    background: linear-gradient(135deg, #86efac 0%, #4ade80 50%, #22c55e 100%);
+  }
+  .btn-sun {
+    @apply btn text-slate-800 shadow-kid-sun;
+    background: linear-gradient(135deg, #fde047 0%, #facc15 50%, #eab308 100%);
   }
   .btn-ghost {
-    @apply btn bg-white/70 text-slate-700 hover:bg-white;
+    @apply btn bg-white text-slate-700 shadow-kid;
   }
 
+  /* ─── Cards ─── */
   .card {
-    @apply rounded-3xl bg-white/80 p-6 shadow-lg backdrop-blur;
+    @apply rounded-4xl bg-white/90 p-6 shadow-kid backdrop-blur-sm;
+    border: 3px solid white;
+  }
+  .card-color {
+    @apply rounded-4xl p-6 shadow-kid;
+    border: 3px solid white;
   }
 
+  /* ─── Quiz answer button — extra large for kids ─── */
+  .answer-btn {
+    @apply flex w-full items-center gap-4 rounded-3xl bg-white px-6 py-5 text-left
+           font-display text-xl font-bold shadow-kid transition-all
+           active:scale-[0.97];
+    min-height: 84px;
+  }
+  .answer-btn:hover:not(:disabled) {
+    @apply scale-[1.02];
+    background: linear-gradient(135deg, #fff7ed 0%, #ffe0e6 100%);
+  }
+  .answer-btn:disabled {
+    cursor: not-allowed;
+  }
+  .answer-btn-correct {
+    @apply scale-[1.02];
+    background: linear-gradient(135deg, #d1fae5 0%, #86efac 100%) !important;
+    box-shadow: 0 6px 0 #4ade80, 0 0 0 4px #22c55e;
+  }
+  .answer-btn-wrong {
+    background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%) !important;
+    box-shadow: 0 6px 0 #f87171, 0 0 0 4px #ef4444;
+  }
+  .answer-btn-faded {
+    @apply opacity-50;
+  }
+
+  /* ─── Pill ─── */
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-sm font-bold;
+    @apply inline-flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-1.5
+           text-sm font-bold shadow-kid;
+  }
+
+  /* ─── Coin badge enhanced ─── */
+  .coin-badge {
+    @apply inline-flex items-center gap-2 rounded-full px-4 py-2 font-display font-bold
+           shadow-kid;
+    background: linear-gradient(135deg, #fff3b8 0%, #fde047 100%);
+    color: #854d0e;
+  }
+
+  /* ─── Big tappy menu card (for home) ─── */
+  .menu-card {
+    @apply relative flex items-center gap-4 overflow-hidden rounded-4xl p-5
+           text-left shadow-kid transition-all active:scale-[0.97] active:translate-y-1;
+    border: 3px solid white;
+    min-height: 112px;
+  }
+  .menu-card:hover {
+    @apply scale-[1.02];
+  }
+
+  /* ─── Sparkle ───*/
+  .sparkle::before {
+    content: '✨';
+    @apply absolute right-2 top-2 animate-sparkle;
+  }
+}
+
+@layer utilities {
+  .text-rainbow {
+    background: linear-gradient(90deg, #ff5d7a, #facc15, #4ade80, #38bdf8, #a78bfa, #ff5d7a);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: rainbowShift 4s linear infinite;
+  }
+  .text-stroke-white {
+    -webkit-text-stroke: 2px white;
   }
 }
