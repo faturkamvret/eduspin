@@ -4,8 +4,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-1',
     category: 'shape',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Mana yang berbentuk lingkaran?',
     options: [
@@ -18,8 +18,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-2',
     category: 'shape',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Mana yang berbentuk segitiga?',
     options: [
@@ -32,8 +32,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-3',
     category: 'shape',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 1,
+    ageMax: 3,
     difficulty: 1,
     prompt: 'Mana yang berbentuk persegi?',
     options: [
@@ -46,8 +46,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-4',
     category: 'shape',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 2,
+    ageMax: 4,
     difficulty: 2,
     prompt: 'Bola berbentuk apa?',
     visual: '⚽',
@@ -61,8 +61,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-5',
     category: 'shape',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 2,
+    ageMax: 4,
     difficulty: 2,
     prompt: 'Atap rumah biasanya berbentuk?',
     visual: '🏠',
@@ -76,8 +76,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-6',
     category: 'shape',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 3,
+    ageMax: 5,
     difficulty: 2,
     prompt: 'Bintang punya berapa sudut?',
     visual: '⭐',
@@ -91,8 +91,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-7',
     category: 'shape',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 3,
+    ageMax: 5,
     difficulty: 2,
     prompt: 'Mana bentuk hati?',
     options: [
@@ -105,8 +105,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-8',
     category: 'shape',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 2,
     prompt: 'Mana yang oval?',
     options: [
@@ -119,8 +119,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-9',
     category: 'shape',
-    ageMin: 6,
-    ageMax: 8,
+    ageMin: 5,
+    ageMax: 6,
     difficulty: 3,
     prompt: 'Berapa sisi yang dimiliki segi enam?',
     visual: '⬢',
@@ -134,8 +134,8 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
   {
     id: 'shape-10',
     category: 'shape',
-    ageMin: 6,
-    ageMax: 8,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 3,
     prompt: 'Roda mobil berbentuk?',
     visual: '🚗',

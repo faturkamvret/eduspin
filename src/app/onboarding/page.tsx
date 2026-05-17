@@ -7,7 +7,14 @@ import { useAppStore } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
 import { sfx } from '@/lib/sfx';
 
-const AGES = [3, 4, 5, 6, 7, 8, 9, 10];
+const AGE_OPTIONS = [
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+  { value: 4, label: '4' },
+  { value: 5, label: '5' },
+  { value: 6, label: '6+' },
+];
 
 export default function OnboardingPage() {
   return (
@@ -133,25 +140,25 @@ function Inner() {
           <p className="text-sm text-slate-600">
             Soal akan disesuaikan dengan umurmu supaya pas dan seru!
           </p>
-          <div className="grid grid-cols-4 gap-3">
-            {AGES.map((a) => (
+          <div className="grid grid-cols-3 gap-3">
+            {AGE_OPTIONS.map((opt) => (
               <button
-                key={a}
+                key={opt.value}
                 type="button"
                 onClick={() => {
                   sfx.click();
-                  setAge(a);
+                  setAge(opt.value);
                 }}
                 className={`rounded-2xl py-3 font-display text-2xl font-bold shadow transition-all
                   ${
-                    age === a
+                    age === opt.value
                       ? 'bg-primary-500 text-white scale-105'
                       : 'bg-white text-slate-700 hover:bg-primary-50'
                   }`}
-                aria-pressed={age === a}
-                aria-label={`Umur ${a} tahun`}
+                aria-pressed={age === opt.value}
+                aria-label={`Umur ${opt.label} tahun`}
               >
-                {a}
+                {opt.label}
               </button>
             ))}
           </div>

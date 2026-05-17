@@ -137,7 +137,7 @@ export const useAppStore = create<AppState>()(
       setProfile: (nickname, age) => {
         const now = Date.now();
         const trimmed = nickname.trim().slice(0, 20);
-        const safeAge = Math.max(3, Math.min(10, Math.round(age)));
+        const safeAge = Math.max(1, Math.min(6, Math.round(age)));
         set({
           profile: {
             uid: get().profile?.uid ?? `local-${now}`,
@@ -160,7 +160,7 @@ export const useAppStore = create<AppState>()(
               ? { nickname: patch.nickname.trim().slice(0, 20) }
               : {}),
             ...(patch.age !== undefined
-              ? { age: Math.max(3, Math.min(10, Math.round(patch.age))) }
+              ? { age: Math.max(1, Math.min(6, Math.round(patch.age))) }
               : {}),
             updatedAt: now,
           },

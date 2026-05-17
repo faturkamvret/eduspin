@@ -9,7 +9,14 @@ import { sfx, setMuted as setSfxMuted } from '@/lib/sfx';
 import { PITY_EPIC_THRESHOLD, PITY_LEGENDARY_THRESHOLD, RARITY_RATES } from '@/lib/gacha';
 import { SyncBadge } from '@/components/SyncBadge';
 
-const AGES = [3, 4, 5, 6, 7, 8, 9, 10];
+const AGE_OPTIONS = [
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+  { value: 4, label: '4' },
+  { value: 5, label: '5' },
+  { value: 6, label: '6+' },
+];
 
 export default function SettingsPage() {
   return (
@@ -91,20 +98,20 @@ function Inner() {
           <div className="mb-2 text-xs font-semibold text-slate-500">
             Umur (mengubah ini akan menyesuaikan tingkat kesulitan soal)
           </div>
-          <div className="grid grid-cols-4 gap-2">
-            {AGES.map((a) => (
+          <div className="grid grid-cols-3 gap-2">
+            {AGE_OPTIONS.map((opt) => (
               <button
-                key={a}
+                key={opt.value}
                 type="button"
-                onClick={() => changeAge(a)}
+                onClick={() => changeAge(opt.value)}
                 className={`rounded-2xl py-2 font-display text-lg font-bold shadow ${
-                  profile.age === a
+                  profile.age === opt.value
                     ? 'bg-primary-500 text-white'
                     : 'bg-white text-slate-700'
                 }`}
-                aria-pressed={profile.age === a}
+                aria-pressed={profile.age === opt.value}
               >
-                {a}
+                {opt.label}
               </button>
             ))}
           </div>

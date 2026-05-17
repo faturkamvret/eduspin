@@ -4,8 +4,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-1',
     category: 'counting',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 2,
+    ageMax: 4,
     difficulty: 1,
     prompt: 'Ada berapa apel?',
     visual: '🍎 🍎 🍎',
@@ -19,8 +19,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-2',
     category: 'counting',
-    ageMin: 3,
-    ageMax: 5,
+    ageMin: 2,
+    ageMax: 4,
     difficulty: 1,
     prompt: 'Ada berapa bintang?',
     visual: '⭐ ⭐',
@@ -34,8 +34,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-3',
     category: 'counting',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 3,
+    ageMax: 5,
     difficulty: 1,
     prompt: 'Ada berapa balon?',
     visual: '🎈 🎈 🎈 🎈',
@@ -49,8 +49,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-4',
     category: 'counting',
-    ageMin: 4,
-    ageMax: 6,
+    ageMin: 3,
+    ageMax: 5,
     difficulty: 2,
     prompt: 'Ada berapa kucing?',
     visual: '🐱 🐱 🐱 🐱 🐱',
@@ -64,8 +64,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-5',
     category: 'counting',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 2,
     prompt: '2 + 1 = ?',
     options: [
@@ -78,8 +78,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-6',
     category: 'counting',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 2,
     prompt: '3 + 2 = ?',
     options: [
@@ -92,8 +92,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-7',
     category: 'counting',
-    ageMin: 5,
-    ageMax: 7,
+    ageMin: 4,
+    ageMax: 6,
     difficulty: 2,
     prompt: '4 - 1 = ?',
     options: [
@@ -106,8 +106,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-8',
     category: 'counting',
-    ageMin: 6,
-    ageMax: 8,
+    ageMin: 5,
+    ageMax: 6,
     difficulty: 3,
     prompt: '5 + 3 = ?',
     options: [
@@ -120,8 +120,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-9',
     category: 'counting',
-    ageMin: 6,
-    ageMax: 8,
+    ageMin: 5,
+    ageMax: 6,
     difficulty: 3,
     prompt: '10 - 4 = ?',
     options: [
@@ -134,8 +134,8 @@ export const COUNTING_QUESTIONS: QuizQuestion[] = [
   {
     id: 'counting-10',
     category: 'counting',
-    ageMin: 7,
-    ageMax: 10,
+    ageMin: 6,
+    ageMax: 6,
     difficulty: 3,
     prompt: '7 + 5 = ?',
     options: [

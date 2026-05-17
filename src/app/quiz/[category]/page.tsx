@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
-import { PageShell } from '@/components/PageShell';
 import { CoinBadge } from '@/components/CoinBadge';
 import { getCategoryMeta } from '@/data/categories';
 import { pickAdaptiveQuestions } from '@/data/questions';
@@ -32,10 +31,14 @@ function Inner() {
 
   const meta = getCategoryMeta(params.category);
 
+  // Session counter to regenerate questions on "Lanjut Quiz"
+  const [sessionKey, setSessionKey] = useState(0);
+
   const questions = useMemo<QuizQuestion[]>(() => {
     if (!profile || !meta) return [];
     return pickAdaptiveQuestions(meta.id as QuizCategoryId, profile.age, SESSION_LENGTH);
-  }, [profile, meta]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, meta, sessionKey]);
 
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -48,18 +51,27 @@ function Inner() {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
 
+  // Start a new quiz session (auto-focus: loops forever until X is pressed)
+  const startNewSession = useCallback(() => {
+    setSessionKey((k) => k + 1);
+    setIdx(0);
+    setSelected(null);
+    setRevealed(false);
+    setCorrectCount(0);
+    setDone(false);
+    setBonusGiven(false);
+    sfx.click();
+  }, []);
+
   if (!profile || !meta) return null;
   if (questions.length === 0) {
     return (
-      <PageShell title={meta.label}>
+      <FocusShell onExit={() => router.push('/home')} title={meta.label} coins={wallet.coins}>
         <div className="card text-center">
           <div className="text-5xl">😅</div>
           <p className="mt-2 font-bold">Belum ada soal di kategori ini.</p>
-          <button className="btn-primary mt-4" onClick={() => router.back()}>
-            Kembali
-          </button>
         </div>
-      </PageShell>
+      </FocusShell>
     );
   }
 
@@ -98,7 +110,7 @@ function Inner() {
     const earnedFromAnswers = correctCount * COIN_CONSTANTS.COIN_PER_CORRECT;
     const totalEarned = earnedFromAnswers + COIN_CONSTANTS.COIN_BONUS_PER_SESSION;
     return (
-      <PageShell title="Selesai!" right={<CoinBadge coins={wallet.coins} />}>
+      <FocusShell onExit={() => router.push('/home')} title="Selesai!" coins={wallet.coins}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -119,16 +131,12 @@ function Inner() {
               ({earnedFromAnswers} dari jawaban + {COIN_CONSTANTS.COIN_BONUS_PER_SESSION} bonus)
             </div>
           </div>
-          <div className="mt-2 grid w-full grid-cols-2 gap-2">
-            <button className="btn-ghost" onClick={() => router.push('/home')}>
-              Ke Beranda
-            </button>
-            <button className="btn-primary" onClick={() => router.push('/claw')}>
-              Main Claw 🎰
-            </button>
-          </div>
+          {/* Auto-focus: only "Lanjut Quiz" button, no home/claw */}
+          <button className="btn-primary mt-2 w-full text-lg" onClick={startNewSession}>
+            Lanjut Quiz! 📚
+          </button>
         </motion.div>
-      </PageShell>
+      </FocusShell>
     );
   }
 
@@ -136,7 +144,11 @@ function Inner() {
   const isCorrect = revealed && selected === q.correctOptionId;
 
   return (
-    <PageShell title={`${meta.emoji} ${meta.label}`} right={<CoinBadge coins={wallet.coins} />}>
+    <FocusShell
+      onExit={() => router.push('/home')}
+      title={`${meta.emoji} ${meta.label}`}
+      coins={wallet.coins}
+    >
       {/* Progress */}
       <div className="flex items-center gap-2">
         <div className="h-3 flex-1 overflow-hidden rounded-full bg-white/70">
@@ -220,6 +232,43 @@ function Inner() {
           )}
         </motion.div>
       </AnimatePresence>
-    </PageShell>
+    </FocusShell>
+  );
+}
+
+/**
+ * FocusShell — replaces PageShell for quiz auto-focus mode.
+ * No back button. Only an X button in top-right for parent to exit.
+ */
+function FocusShell({
+  children,
+  onExit,
+  title,
+  coins,
+}: {
+  children: React.ReactNode;
+  onExit: () => void;
+  title: string;
+  coins: number;
+}) {
+  return (
+    <main className="flex flex-1 flex-col gap-4 px-4 py-4">
+      <header className="flex items-center justify-between">
+        <CoinBadge coins={coins} />
+        <h1 className="font-display text-xl font-bold text-slate-800">{title}</h1>
+        <button
+          type="button"
+          onClick={() => {
+            sfx.click();
+            onExit();
+          }}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-lg font-bold text-slate-600 shadow transition-all hover:bg-white hover:text-slate-800"
+          aria-label="Keluar dari quiz"
+        >
+          ✕
+        </button>
+      </header>
+      {children}
+    </main>
   );
 }
