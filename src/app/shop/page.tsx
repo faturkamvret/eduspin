@@ -9,12 +9,11 @@ import { CoinBadge } from '@/components/CoinBadge';
 import { Confetti } from '@/components/Confetti';
 import { FloatingDeco } from '@/components/FloatingDeco';
 import { Mascot } from '@/components/Mascot';
-import { COLLECTIBLES } from '@/data/collectibles';
+import { getCollectibleById } from '@/data/collectibles';
 import { sfx, playCollectibleSfx } from '@/lib/sfx';
-import { RARITY_LABEL } from '@/lib/utils';
-import type { Collectible, Gender, Rarity } from '@/types';
+import type { Collectible } from '@/types';
 
-const SHOP_RARITIES: Rarity[] = ['common', 'rare'];
+const ROTATION_MS = 24 * 60 * 60 * 1000;
 
 export default function ShopPage() {
   return (
@@ -30,27 +29,61 @@ function Inner() {
   const wallet = useAppStore((s) => s.wallet);
   const collection = useAppStore((s) => s.collection);
   const buyCollectible = useAppStore((s) => s.buyCollectible);
+  const getOrRotateShopOffers = useAppStore((s) => s.getOrRotateShopOffers);
+  const shopOffers = useAppStore((s) => s.shopOffers);
 
-  const [tab, setTab] = useState<Rarity>('common');
   const [confetti, setConfetti] = useState(false);
   const [purchased, setPurchased] = useState<Collectible | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  // tick state forces a re-render every minute so the countdown stays fresh
+  const [, setNowTick] = useState(0);
 
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
 
-  const items = useMemo(() => {
-    const gender: Gender = profile?.gender ?? 'boy';
-    return COLLECTIBLES
-      .filter((c) => c.rarity === tab)
-      .sort((a, b) => {
-        // Gender-match first, then unisex, then other
-        const scoreA = a.gender === gender ? 0 : a.gender === 'unisex' ? 1 : 2;
-        const scoreB = b.gender === gender ? 0 : b.gender === 'unisex' ? 1 : 2;
-        return scoreA - scoreB;
-      });
-  }, [tab, profile?.gender]);
+  // Trigger initial rotation check on mount + when profile changes (e.g. gender).
+  useEffect(() => {
+    if (!profile) return;
+    getOrRotateShopOffers();
+  }, [profile, getOrRotateShopOffers]);
+
+  // Update countdown every 60s.
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // When the rotation expires, kick a re-rotate at the moment of expiry.
+  useEffect(() => {
+    if (!shopOffers) return;
+    const remaining = ROTATION_MS - (Date.now() - shopOffers.rotatedAt);
+    if (remaining <= 0) {
+      getOrRotateShopOffers();
+      return;
+    }
+    const id = setTimeout(() => {
+      getOrRotateShopOffers();
+      setNowTick((n) => n + 1);
+    }, remaining + 100);
+    return () => clearTimeout(id);
+  }, [shopOffers, getOrRotateShopOffers]);
+
+  const items = useMemo<Collectible[]>(() => {
+    if (!shopOffers) return [];
+    return shopOffers.itemIds
+      .map((id) => getCollectibleById(id))
+      .filter((c): c is Collectible => Boolean(c));
+    // shopOffers.rotatedAt is included indirectly via shopOffers identity changes
+  }, [shopOffers]);
+
+  const countdown = useMemo(() => {
+    if (!shopOffers) return '';
+    const remaining = Math.max(0, ROTATION_MS - (Date.now() - shopOffers.rotatedAt));
+    const h = Math.floor(remaining / (60 * 60 * 1000));
+    const m = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+    return `${h}j ${m}m`;
+  }, [shopOffers]);
 
   if (!profile) return null;
 
@@ -101,7 +134,11 @@ function Inner() {
 
       {/* Mascot greeting */}
       <div className="flex items-center justify-center gap-3">
-        <Mascot mood="cheer" bubble={`Hai ${profile.nickname}! Pilih hadiahmu ya!`} size="text-5xl" />
+        <Mascot
+          mood="cheer"
+          bubble={`Hai ${profile.nickname}! Pilih hadiahmu ya!`}
+          size="text-5xl"
+        />
       </div>
 
       {/* Claw Machine entry — big call-out card */}
@@ -118,15 +155,9 @@ function Inner() {
         }}
         aria-label="Masuk ke Claw Machine"
       >
-        <FloatingDeco count={8} emojis={['🌟', '⭐', '✨']} z="front" />
-        <motion.div
-          animate={{ rotate: [-6, 6, -6], y: [0, -4, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="text-6xl drop-shadow"
-          aria-hidden
-        >
+        <div className="text-6xl drop-shadow" aria-hidden>
           🎰
-        </motion.div>
+        </div>
         <div className="relative z-10 flex-1">
           <div className="font-display text-2xl font-extrabold drop-shadow">
             Claw Machine!
@@ -138,30 +169,20 @@ function Inner() {
         <div className="relative z-10 text-3xl font-bold">→</div>
       </button>
 
-      {/* Tabs */}
-      <div className="flex gap-3">
-        {SHOP_RARITIES.map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => {
-              sfx.click();
-              setTab(r);
-            }}
-            className={`flex-1 rounded-3xl px-4 py-3 font-display text-base font-bold shadow-kid transition-all active:scale-95 ${
-              tab === r
-                ? r === 'common'
-                  ? 'bg-gradient-to-r from-slate-200 to-slate-300 text-slate-800 ring-4 ring-slate-400'
-                  : 'bg-gradient-to-r from-blue-300 to-sky-400 text-white ring-4 ring-blue-500'
-                : 'bg-white text-slate-600'
-            }`}
-          >
-            {r === 'common' ? '⚪ Biasa' : '🔵 Langka'}
-            <div className="mt-0.5 text-xs font-semibold opacity-80">
-              {SHOP_PRICES[r]} 🪙
-            </div>
-          </button>
-        ))}
+      {/* Rotation info banner */}
+      <div className="card-color flex items-center justify-between gap-3 bg-gradient-to-br from-amber-100 to-orange-100 px-5 py-3 text-amber-900">
+        <div className="text-sm font-bold">
+          ✨ Hadiah baru tiap hari!
+          <div className="text-xs font-semibold opacity-80">
+            8 hadiah dipilih acak untukmu
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+            Berganti dalam
+          </div>
+          <div className="font-display text-lg font-extrabold">{countdown}</div>
+        </div>
       </div>
 
       {/* Error toast */}
@@ -178,65 +199,65 @@ function Inner() {
         )}
       </AnimatePresence>
 
-      {/* Item grid */}
-      <div className="grid grid-cols-2 gap-4">
-        {items.map((item) => {
-          const owned = !!collection.items[item.id];
-          const price = SHOP_PRICES[item.rarity] ?? 0;
-          const canAfford = wallet.coins >= price;
+      {/* Item grid — 8 items mixed (Common + Rare), no rarity grouping */}
+      {items.length === 0 ? (
+        <div className="card-color bg-white/60 px-5 py-8 text-center text-sm font-semibold text-slate-500">
+          Memuat hadiah...
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          {items.map((item) => {
+            const owned = !!collection.items[item.id];
+            const price = SHOP_PRICES[item.rarity] ?? 0;
+            const canAfford = wallet.coins >= price;
 
-          return (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileTap={{ scale: 0.97 }}
-              className="card-color relative flex flex-col items-center gap-2 overflow-hidden p-4"
-              style={{
-                background: `linear-gradient(135deg, var(--tw-gradient-stops))`,
-              }}
-            >
-              <div
-                className={`absolute inset-0 -z-10 bg-gradient-to-br ${item.gradient} opacity-80`}
-              />
-              {owned && (
-                <div className="absolute right-2 top-2 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white shadow">
-                  ✓ Punya
-                </div>
-              )}
+            return (
               <motion.div
-                animate={{ y: [0, -4, 0], rotate: [-3, 3, -3] }}
-                transition={{ repeat: Infinity, duration: 2.4 }}
-                className="text-6xl drop-shadow-lg"
-                aria-hidden
+                key={item.id}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileTap={{ scale: 0.97 }}
+                className="card-color relative flex flex-col items-center gap-2 overflow-hidden p-4"
               >
-                {item.emoji}
+                <div
+                  className={`absolute inset-0 -z-10 bg-gradient-to-br ${item.gradient} opacity-80`}
+                />
+                {owned && (
+                  <div className="absolute right-2 top-2 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white shadow">
+                    ✓ Punya
+                  </div>
+                )}
+                <div className="text-6xl drop-shadow-lg" aria-hidden>
+                  {item.emoji}
+                </div>
+                <div className="text-center font-display text-base font-extrabold leading-tight text-slate-800 drop-shadow">
+                  {item.name}
+                </div>
+                <div className="text-center text-xs font-semibold text-slate-700">
+                  {item.flavor}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleBuy(item)}
+                  disabled={owned || !canAfford}
+                  className={`mt-1 w-full rounded-full px-3 py-2 font-display text-sm font-extrabold shadow-kid transition-all active:scale-95 ${
+                    owned
+                      ? 'bg-emerald-200 text-emerald-700 cursor-not-allowed'
+                      : canAfford
+                        ? 'bg-gradient-to-r from-amber-300 to-orange-400 text-white'
+                        : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                  }`}
+                  aria-label={
+                    owned ? 'Sudah dimiliki' : `Beli ${item.name} ${price} koin`
+                  }
+                >
+                  {owned ? '🔒 Sudah Punya' : `Beli · ${price} 🪙`}
+                </button>
               </motion.div>
-              <div className="text-center font-display text-base font-extrabold leading-tight text-slate-800 drop-shadow">
-                {item.name}
-              </div>
-              <div className="text-center text-xs font-semibold text-slate-700">
-                {item.flavor}
-              </div>
-              <button
-                type="button"
-                onClick={() => handleBuy(item)}
-                disabled={owned || !canAfford}
-                className={`mt-1 w-full rounded-full px-3 py-2 font-display text-sm font-extrabold shadow-kid transition-all active:scale-95 ${
-                  owned
-                    ? 'bg-emerald-200 text-emerald-700 cursor-not-allowed'
-                    : canAfford
-                      ? 'bg-gradient-to-r from-amber-300 to-orange-400 text-white'
-                      : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                }`}
-                aria-label={owned ? 'Sudah dimiliki' : `Beli ${item.name} ${price} koin`}
-              >
-                {owned ? '🔒 Sudah Punya' : `Beli · ${price} 🪙`}
-              </button>
-            </motion.div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Info box */}
       <div className="card-color bg-gradient-to-br from-amber-100 to-orange-100 px-5 py-3 text-center text-xs font-semibold text-amber-800">

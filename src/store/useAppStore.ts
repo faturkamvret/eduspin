@@ -16,13 +16,16 @@ import type {
   Wallet,
 } from '@/types';
 import { performPull } from '@/lib/gacha';
-import { getCollectibleById } from '@/data/collectibles';
+import { getCollectibleById, getCollectiblesForGender } from '@/data/collectibles';
 
 const COIN_PER_CORRECT = 1;
 const COIN_BONUS_PER_SESSION = 5;
 const COIN_DAILY_BONUS = 5;
 const COIN_PER_PULL = 10;
 const DAILY_BONUS_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const SHOP_ROTATION_MS = 24 * 60 * 60 * 1000;
+const SHOP_COMMON_SLOTS = 4;
+const SHOP_RARE_SLOTS = 4;
 
 /**
  * Shop pricing per rarity.
@@ -38,6 +41,19 @@ export function getShopPrice(item: Collectible): number | null {
 }
 
 export type SyncStatus = 'disabled' | 'connecting' | 'syncing' | 'synced' | 'offline' | 'error';
+
+/**
+ * Currently-rotating shop offers.
+ * Stored in persisted state so the same items show on refresh until rotation expires.
+ */
+export interface ShopOffers {
+  /** Collectible IDs to display in shop, mixed Common + Rare in random order. */
+  itemIds: string[];
+  /** Timestamp (ms) when this set was generated. */
+  rotatedAt: number;
+  /** Gender used to generate the set; regenerate if profile gender changes. */
+  gender: Gender;
+}
 
 export interface AppState {
   /** Hydration flag. UI should wait until this is true before rendering. */
@@ -56,6 +72,8 @@ export interface AppState {
   collection: Collection;
   quizStats: QuizStats;
   settings: AppSettings;
+  /** Currently-rotating shop offers. Null until first call to getOrRotateShopOffers. */
+  shopOffers: ShopOffers | null;
 
   // ─── actions ───
   setHydrated: () => void;
@@ -95,6 +113,15 @@ export interface AppState {
         ok: false;
         reason: 'not-for-sale' | 'already-owned' | 'not-enough-coins' | 'unknown-item';
       };
+
+  /**
+   * Get the current shop offers, rotating them if expired (>24h since last rotate)
+   * or if the gender has changed. Persists the result so the page is stable across reloads.
+   *
+   * Returns 4 random Common + 4 random Rare items mixed in random order, filtered
+   * by current profile gender (boy → boy + unisex; girl → girl + unisex).
+   */
+  getOrRotateShopOffers: () => ShopOffers;
 
   setMuted: (muted: boolean) => void;
 }
@@ -147,6 +174,7 @@ export const useAppStore = create<AppState>()(
       collection: emptyCollection(),
       quizStats: emptyQuizStats(),
       settings: { muted: false },
+      shopOffers: null,
 
       setHydrated: () => set({ hydrated: true }),
       setSyncStatus: (syncStatus) => set({ syncStatus }),
@@ -184,6 +212,7 @@ export const useAppStore = create<AppState>()(
         const cur = get().profile;
         if (!cur) return;
         const now = Date.now();
+        const genderChanged = patch.gender !== undefined && patch.gender !== cur.gender;
         set({
           profile: {
             ...cur,
@@ -196,6 +225,8 @@ export const useAppStore = create<AppState>()(
             ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
             updatedAt: now,
           },
+          // Invalidate shop offers when gender changes so the new pool is generated.
+          ...(genderChanged ? { shopOffers: null } : {}),
         });
       },
 
@@ -207,6 +238,7 @@ export const useAppStore = create<AppState>()(
           collection: emptyCollection(),
           quizStats: emptyQuizStats(),
           settings: { muted: false },
+          shopOffers: null,
         }),
 
       recordAnswer: (categoryId, correct) => {
@@ -352,6 +384,55 @@ export const useAppStore = create<AppState>()(
         return { ok: true, price, item };
       },
 
+      getOrRotateShopOffers: () => {
+        const now = Date.now();
+        const profile = get().profile;
+        const gender: Gender = profile?.gender ?? 'boy';
+        const current = get().shopOffers;
+
+        if (
+          current &&
+          current.gender === gender &&
+          now - current.rotatedAt < SHOP_ROTATION_MS
+        ) {
+          return current;
+        }
+
+        // Build a new rotation: pick N random Common + N random Rare from the
+        // gender-filtered pool, then shuffle them together.
+        const pool = getCollectiblesForGender(gender);
+        const commons = pool.filter((c) => c.rarity === 'common');
+        const rares = pool.filter((c) => c.rarity === 'rare');
+
+        const pickN = (arr: Collectible[], n: number): Collectible[] => {
+          const copy = [...arr];
+          // Fisher-Yates partial shuffle
+          for (let i = 0; i < Math.min(n, copy.length); i++) {
+            const j = i + Math.floor(Math.random() * (copy.length - i));
+            [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+          }
+          return copy.slice(0, Math.min(n, copy.length));
+        };
+
+        const chosen = [
+          ...pickN(commons, SHOP_COMMON_SLOTS),
+          ...pickN(rares, SHOP_RARE_SLOTS),
+        ];
+        // Shuffle the combined set so common/rare appear mixed (no grouping).
+        for (let i = chosen.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [chosen[i], chosen[j]] = [chosen[j]!, chosen[i]!];
+        }
+
+        const next: ShopOffers = {
+          itemIds: chosen.map((c) => c.id),
+          rotatedAt: now,
+          gender,
+        };
+        set({ shopOffers: next });
+        return next;
+      },
+
       setMuted: (muted) => set({ settings: { ...get().settings, muted } }),
     }),
     {
@@ -366,6 +447,7 @@ export const useAppStore = create<AppState>()(
         collection: state.collection,
         quizStats: state.quizStats,
         settings: state.settings,
+        shopOffers: state.shopOffers,
       }),
       onRehydrateStorage: () => (state) => {
         // Mark hydrated after persist middleware finishes loading
