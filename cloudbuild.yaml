@@ -1,34 +1,13 @@
 # Cloud Build pipeline: build container, push to Artifact Registry,
 # deploy to Cloud Run in asia-southeast2 (Jakarta).
 #
-# Usage (one-time setup):
-#   gcloud artifacts repositories create eduspin --repository-format=docker \
-#       --location=asia-southeast2
-#   gcloud iam service-accounts add-iam-policy-binding ... (grant deploy roles)
-#
-# Trigger: connect this repo to Cloud Build, push to main → auto deploy.
-#
-# Variables (substitute at trigger or via --substitutions):
-#   _REGION        default: asia-southeast2
-#   _SERVICE       default: eduspin
-#   _REPO          default: eduspin (Artifact Registry repo name)
-#
-# Firebase public config is passed via build args from Cloud Build substitutions
-# (set them as substitution variables on the trigger):
-#   _FB_API_KEY, _FB_AUTH_DOMAIN, _FB_PROJECT_ID, _FB_BUCKET, _FB_SENDER_ID,
-#   _FB_APP_ID, _FB_ENABLED
+# Firebase config is read from .env.production (committed to repo).
+# No substitution variables needed.
 
 substitutions:
   _REGION: asia-southeast2
   _SERVICE: eduspin
   _REPO: eduspin
-  _FB_API_KEY: ''
-  _FB_AUTH_DOMAIN: ''
-  _FB_PROJECT_ID: ''
-  _FB_BUCKET: ''
-  _FB_SENDER_ID: ''
-  _FB_APP_ID: ''
-  _FB_ENABLED: 'false'
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -43,20 +22,6 @@ steps:
     name: gcr.io/cloud-builders/docker
     args:
       - build
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_API_KEY=${_FB_API_KEY}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_FB_AUTH_DOMAIN}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_FB_PROJECT_ID}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_FB_BUCKET}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_FB_SENDER_ID}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_APP_ID=${_FB_APP_ID}
-      - --build-arg
-      - NEXT_PUBLIC_FIREBASE_ENABLED=${_FB_ENABLED}
       - -t
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA'
       - -t
