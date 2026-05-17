@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
 import { CoinBadge } from '@/components/CoinBadge';
+import { SyncBadge } from '@/components/SyncBadge';
 import { sfx } from '@/lib/sfx';
 import { COLLECTIBLES } from '@/data/collectibles';
 
@@ -73,6 +74,10 @@ function Inner() {
         </h1>
         <CoinBadge coins={wallet.coins} />
       </header>
+
+      <div className="flex justify-end">
+        <SyncBadge />
+      </div>
 
       {/* Greeting card */}
       <motion.section

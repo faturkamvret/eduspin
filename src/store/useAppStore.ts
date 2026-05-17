@@ -20,9 +20,18 @@ const COIN_DAILY_BONUS = 5;
 const COIN_PER_PULL = 10;
 const DAILY_BONUS_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
+export type SyncStatus = 'disabled' | 'connecting' | 'syncing' | 'synced' | 'offline' | 'error';
+
 export interface AppState {
   /** Hydration flag. UI should wait until this is true before rendering. */
   hydrated: boolean;
+
+  /** Cloud sync status (UI indicator only). */
+  syncStatus: SyncStatus;
+  /** Last successful sync timestamp. */
+  lastSyncedAt: number | null;
+  /** Firebase anonymous auth uid (when sync is enabled). */
+  cloudUid: string | null;
 
   profile: ChildProfile | null;
   wallet: Wallet;
@@ -33,6 +42,14 @@ export interface AppState {
 
   // ─── actions ───
   setHydrated: () => void;
+  setSyncStatus: (status: SyncStatus) => void;
+  setCloudUid: (uid: string | null) => void;
+  markSynced: () => void;
+  /**
+   * Replace local state with snapshot from cloud.
+   * Used when cloud data is newer than local on first load.
+   */
+  hydrateFromCloud: (snapshot: CloudSnapshot) => void;
 
   setProfile: (nickname: string, age: number) => void;
   updateProfile: (patch: Partial<Pick<ChildProfile, 'nickname' | 'age'>>) => void;
@@ -78,10 +95,22 @@ const emptyQuizStats = (): QuizStats => ({
   updatedAt: Date.now(),
 });
 
+export interface CloudSnapshot {
+  profile: ChildProfile | null;
+  wallet: Wallet;
+  pity: PullHistory;
+  collection: Collection;
+  quizStats: QuizStats;
+  settings: AppSettings;
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       hydrated: false,
+      syncStatus: 'disabled',
+      lastSyncedAt: null,
+      cloudUid: null,
       profile: null,
       wallet: emptyWallet(),
       pity: emptyPity(),
@@ -90,6 +119,20 @@ export const useAppStore = create<AppState>()(
       settings: { muted: false },
 
       setHydrated: () => set({ hydrated: true }),
+      setSyncStatus: (syncStatus) => set({ syncStatus }),
+      setCloudUid: (cloudUid) => set({ cloudUid }),
+      markSynced: () => set({ syncStatus: 'synced', lastSyncedAt: Date.now() }),
+
+      hydrateFromCloud: (snap) => {
+        set({
+          profile: snap.profile,
+          wallet: snap.wallet,
+          pity: snap.pity,
+          collection: snap.collection,
+          quizStats: snap.quizStats,
+          settings: snap.settings,
+        });
+      },
 
       setProfile: (nickname, age) => {
         const now = Date.now();
