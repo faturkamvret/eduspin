@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
 import { CoinBadge } from '@/components/CoinBadge';
+import { Confetti } from '@/components/Confetti';
+import { Mascot } from '@/components/Mascot';
+import { FloatingDeco } from '@/components/FloatingDeco';
 import { getCategoryMeta } from '@/data/categories';
 import { pickAdaptiveQuestions } from '@/data/questions';
 import type { QuizCategoryId, QuizQuestion } from '@/types';
@@ -30,8 +33,6 @@ function Inner() {
   const finishQuizSession = useAppStore((s) => s.finishQuizSession);
 
   const meta = getCategoryMeta(params.category);
-
-  // Session counter to regenerate questions on "Lanjut Quiz"
   const [sessionKey, setSessionKey] = useState(0);
 
   const questions = useMemo<QuizQuestion[]>(() => {
@@ -46,12 +47,12 @@ function Inner() {
   const [correctCount, setCorrectCount] = useState(0);
   const [done, setDone] = useState(false);
   const [bonusGiven, setBonusGiven] = useState(false);
+  const [confetti, setConfetti] = useState(false);
 
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
 
-  // Start a new quiz session (auto-focus: loops forever until X is pressed)
   const startNewSession = useCallback(() => {
     setSessionKey((k) => k + 1);
     setIdx(0);
@@ -60,6 +61,7 @@ function Inner() {
     setCorrectCount(0);
     setDone(false);
     setBonusGiven(false);
+    setConfetti(false);
     sfx.click();
   }, []);
 
@@ -67,9 +69,11 @@ function Inner() {
   if (questions.length === 0) {
     return (
       <FocusShell onExit={() => router.push('/home')} title={meta.label} coins={wallet.coins}>
-        <div className="card text-center">
-          <div className="text-5xl">😅</div>
-          <p className="mt-2 font-bold">Belum ada soal di kategori ini.</p>
+        <div className="card flex flex-col items-center gap-4 text-center">
+          <Mascot mood="thinking" bubble="Wah belum ada soal..." />
+          <p className="font-display text-lg font-bold">
+            Kategori ini sedang disiapkan ya.
+          </p>
         </div>
       </FocusShell>
     );
@@ -85,6 +89,8 @@ function Inner() {
     if (correct) {
       setCorrectCount((c) => c + 1);
       sfx.correct();
+      setConfetti(true);
+      setTimeout(() => setConfetti(false), 1500);
     } else {
       sfx.wrong();
     }
@@ -97,6 +103,8 @@ function Inner() {
         finishQuizSession();
         sfx.fanfare();
         setBonusGiven(true);
+        setConfetti(true);
+        setTimeout(() => setConfetti(false), 2200);
       }
       setDone(true);
       return;
@@ -111,29 +119,36 @@ function Inner() {
     const totalEarned = earnedFromAnswers + COIN_CONSTANTS.COIN_BONUS_PER_SESSION;
     return (
       <FocusShell onExit={() => router.push('/home')} title="Selesai!" coins={wallet.coins}>
+        <Confetti show={confetti} count={50} />
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="card flex flex-col items-center gap-3 text-center"
+          transition={{ type: 'spring', damping: 14 }}
+          className="card flex flex-col items-center gap-4 text-center"
         >
-          <div className="text-7xl animate-bounce-soft">🎉</div>
-          <h2 className="font-display text-2xl font-bold">Kerja bagus, {profile.nickname}!</h2>
-          <p className="text-slate-600">
+          <Mascot mood="celebrate" bubble="Pintar banget!" size="text-7xl" />
+          <h2 className="font-display text-3xl font-extrabold text-rainbow">
+            Hebat, {profile.nickname}!
+          </h2>
+          <p className="font-display text-lg font-bold text-slate-700">
             Kamu menjawab benar{' '}
-            <span className="font-bold text-emerald-600">
+            <span className="text-emerald-600">
               {correctCount}/{questions.length}
-            </span>
+            </span>{' '}
+            🎯
           </p>
-          <div className="rounded-2xl bg-amber-100 px-4 py-3 text-amber-800">
-            <div className="text-sm">Koin didapat sesi ini</div>
-            <div className="font-display text-2xl font-bold">+{totalEarned} 🪙</div>
-            <div className="text-xs">
-              ({earnedFromAnswers} dari jawaban + {COIN_CONSTANTS.COIN_BONUS_PER_SESSION} bonus)
+          <div
+            className="rounded-3xl px-6 py-4 text-amber-900 shadow-kid-sun"
+            style={{ background: 'linear-gradient(135deg, #fff3b8, #fde047)' }}
+          >
+            <div className="text-xs font-bold uppercase tracking-wide">Koin Sesi Ini</div>
+            <div className="font-display text-4xl font-extrabold">+{totalEarned} 🪙</div>
+            <div className="text-xs font-semibold">
+              ({earnedFromAnswers} jawaban + {COIN_CONSTANTS.COIN_BONUS_PER_SESSION} bonus)
             </div>
           </div>
-          {/* Auto-focus: only "Lanjut Quiz" button, no home/claw */}
-          <button className="btn-primary mt-2 w-full text-lg" onClick={startNewSession}>
-            Lanjut Quiz! 📚
+          <button className="btn-primary mt-2 w-full text-xl" onClick={startNewSession}>
+            Lanjut Quiz! 📚✨
           </button>
         </motion.div>
       </FocusShell>
@@ -149,17 +164,22 @@ function Inner() {
       title={`${meta.emoji} ${meta.label}`}
       coins={wallet.coins}
     >
+      <Confetti show={confetti} />
+
       {/* Progress */}
-      <div className="flex items-center gap-2">
-        <div className="h-3 flex-1 overflow-hidden rounded-full bg-white/70">
+      <div className="flex items-center gap-3">
+        <div className="h-4 flex-1 overflow-hidden rounded-full bg-white/80 shadow-inner">
           <motion.div
-            className="h-full bg-primary-500"
+            className="h-full rounded-full"
+            style={{
+              background: 'linear-gradient(90deg, #ff8fa3, #facc15, #4ade80)',
+            }}
             initial={false}
             animate={{ width: `${progress}%` }}
             transition={{ type: 'spring', stiffness: 80, damping: 18 }}
           />
         </div>
-        <span className="text-sm font-semibold text-slate-600">
+        <span className="font-display text-base font-extrabold text-slate-700">
           {idx + 1}/{questions.length}
         </span>
       </div>
@@ -167,66 +187,83 @@ function Inner() {
       <AnimatePresence mode="wait">
         <motion.div
           key={q.id}
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -24 }}
-          className="card flex flex-col items-center gap-4 text-center"
+          initial={{ opacity: 0, x: 32, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: -32, scale: 0.95 }}
+          transition={{ type: 'spring', damping: 18 }}
+          className="card flex flex-col items-center gap-5 text-center"
         >
           {q.visual && (
-            <div className="text-5xl" aria-hidden>
+            <motion.div
+              animate={{ y: [0, -6, 0], rotate: [-3, 3, -3] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="text-7xl drop-shadow-lg"
+              aria-hidden
+            >
               {q.visual}
-            </div>
+            </motion.div>
           )}
-          <h2 className="font-display text-xl font-bold leading-tight">{q.prompt}</h2>
+          <h2 className="font-display text-2xl font-extrabold leading-tight text-slate-800">
+            {q.prompt}
+          </h2>
 
-          <div className="grid w-full grid-cols-1 gap-2">
+          <div className="grid w-full grid-cols-1 gap-4 mt-2">
             {q.options.map((opt) => {
               const isSelected = selected === opt.id;
               const isRight = opt.id === q.correctOptionId;
-              const stateClass = !revealed
-                ? 'bg-white hover:bg-primary-50'
+              const cls = !revealed
+                ? 'answer-btn'
                 : isRight
-                  ? 'bg-emerald-100 ring-2 ring-emerald-400'
+                  ? 'answer-btn answer-btn-correct'
                   : isSelected
-                    ? 'bg-rose-100 ring-2 ring-rose-400'
-                    : 'bg-white opacity-60';
+                    ? 'answer-btn answer-btn-wrong'
+                    : 'answer-btn answer-btn-faded';
               return (
-                <button
+                <motion.button
                   key={opt.id}
                   type="button"
                   onClick={() => onPick(opt.id)}
                   disabled={revealed}
-                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-left
-                              shadow transition-all ${stateClass}`}
+                  whileTap={!revealed ? { scale: 0.96 } : undefined}
+                  whileHover={!revealed ? { scale: 1.02 } : undefined}
+                  className={cls}
                 >
                   {opt.visual && (
-                    <span className="text-3xl" aria-hidden>
+                    <span className="text-5xl drop-shadow" aria-hidden>
                       {opt.visual}
                     </span>
                   )}
-                  <span className="flex-1 font-bold">{opt.label}</span>
-                  {revealed && isRight && <span aria-hidden>✅</span>}
-                  {revealed && isSelected && !isRight && <span aria-hidden>❌</span>}
-                </button>
+                  <span className="flex-1 font-display text-2xl">{opt.label}</span>
+                  {revealed && isRight && (
+                    <span className="text-3xl" aria-hidden>
+                      ✅
+                    </span>
+                  )}
+                  {revealed && isSelected && !isRight && (
+                    <span className="text-3xl" aria-hidden>
+                      ❌
+                    </span>
+                  )}
+                </motion.button>
               );
             })}
           </div>
 
           {revealed && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex w-full flex-col items-center gap-2"
+              className="flex w-full flex-col items-center gap-3"
             >
               <div
-                className={`text-lg font-bold ${
-                  isCorrect ? 'text-emerald-600' : 'text-rose-600'
+                className={`font-display text-2xl font-extrabold ${
+                  isCorrect ? 'text-emerald-600' : 'text-rose-500'
                 }`}
               >
-                {isCorrect ? '🌟 Benar! +1 koin' : '🤗 Yuk coba lagi soal berikutnya!'}
+                {isCorrect ? '🌟 Benar! +1 koin 🪙' : '🤗 Yuk lanjut soal berikutnya!'}
               </div>
-              <button className="btn-primary w-full" onClick={onNext}>
-                {idx + 1 >= questions.length ? 'Selesai' : 'Lanjut →'}
+              <button className="btn-primary w-full text-xl" onClick={onNext}>
+                {idx + 1 >= questions.length ? '✨ Selesai!' : 'Lanjut →'}
               </button>
             </motion.div>
           )}
@@ -237,7 +274,7 @@ function Inner() {
 }
 
 /**
- * FocusShell — replaces PageShell for quiz auto-focus mode.
+ * FocusShell — quiz auto-focus mode container.
  * No back button. Only an X button in top-right for parent to exit.
  */
 function FocusShell({
@@ -252,18 +289,21 @@ function FocusShell({
   coins: number;
 }) {
   return (
-    <main className="flex flex-1 flex-col gap-4 px-4 py-4">
-      <header className="flex items-center justify-between">
+    <main className="relative flex flex-1 flex-col gap-5 px-4 py-4">
+      <FloatingDeco count={8} emojis={['⭐', '✨', '💖', '🌈']} />
+      <header className="flex items-center justify-between gap-2">
         <CoinBadge coins={coins} />
-        <h1 className="font-display text-xl font-bold text-slate-800">{title}</h1>
+        <h1 className="font-display text-lg font-extrabold text-slate-800 drop-shadow">
+          {title}
+        </h1>
         <button
           type="button"
           onClick={() => {
             sfx.click();
             onExit();
           }}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-lg font-bold text-slate-600 shadow transition-all hover:bg-white hover:text-slate-800"
-          aria-label="Keluar dari quiz"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl font-extrabold text-rose-500 shadow-kid transition-all active:scale-90 hover:bg-rose-50"
+          aria-label="Keluar dari quiz (orang tua)"
         >
           ✕
         </button>
