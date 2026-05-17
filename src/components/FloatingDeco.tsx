@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import type { Gender } from '@/types';
 
@@ -9,7 +8,7 @@ const EMOJIS_GIRL = ['⭐', '🦋', '🌸', '🌹', '💖', '👑', '🧁', '�
 const DEFAULT_EMOJIS = ['⭐', '☁️', '🌈', '✨', '🎈', '💖', '🍬', '🌸'];
 
 interface Props {
-  /** Number of floating items. Default: 12 */
+  /** Number of decorative items. Default: 12 */
   count?: number;
   /** Custom emoji set — overrides gender-based selection */
   emojis?: string[];
@@ -20,11 +19,16 @@ interface Props {
 }
 
 /**
- * Decorative floating emojis sprinkled across the background.
- * Positioned absolutely; parent should be `relative` (or use full-screen mode).
+ * Decorative emojis sprinkled across the background.
+ * Static (no animation) to keep the page light. Each item has a random
+ * position, size, rotation, and opacity computed once on mount.
+ *
+ * Positioned `fixed` to the viewport so it covers the whole page even if
+ * the parent is short.
  */
 export function FloatingDeco({ count = 12, emojis, gender, z = 'back' }: Props) {
-  const emojiSet = emojis ?? (gender === 'boy' ? EMOJIS_BOY : gender === 'girl' ? EMOJIS_GIRL : DEFAULT_EMOJIS);
+  const emojiSet =
+    emojis ?? (gender === 'boy' ? EMOJIS_BOY : gender === 'girl' ? EMOJIS_GIRL : DEFAULT_EMOJIS);
   const items = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
@@ -33,9 +37,8 @@ export function FloatingDeco({ count = 12, emojis, gender, z = 'back' }: Props) 
         x: Math.random() * 90 + 5,
         y: Math.random() * 90 + 5,
         size: 18 + Math.random() * 26,
-        delay: Math.random() * 4,
-        duration: 4 + Math.random() * 3,
-        opacity: 0.35 + Math.random() * 0.4,
+        rotate: Math.random() * 24 - 12,
+        opacity: 0.28 + Math.random() * 0.32,
       })),
     [count, emojiSet],
   );
@@ -43,34 +46,22 @@ export function FloatingDeco({ count = 12, emojis, gender, z = 'back' }: Props) 
   return (
     <div
       aria-hidden
-      className={`pointer-events-none fixed inset-0 ${
-        z === 'back' ? '-z-10' : 'z-0'
-      }`}
+      className={`pointer-events-none fixed inset-0 ${z === 'back' ? '-z-10' : 'z-0'}`}
     >
       {items.map((it) => (
-        <motion.span
+        <span
           key={it.id}
-          initial={{ y: 0, rotate: 0 }}
-          animate={{
-            y: [0, -16, 0, 16, 0],
-            rotate: [-10, 10, -10],
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: it.duration,
-            delay: it.delay,
-            ease: 'easeInOut',
-          }}
           style={{
             position: 'absolute',
             left: `${it.x}%`,
             top: `${it.y}%`,
             fontSize: it.size,
             opacity: it.opacity,
+            transform: `rotate(${it.rotate}deg)`,
           }}
         >
           {it.emoji}
-        </motion.span>
+        </span>
       ))}
     </div>
   );
