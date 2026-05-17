@@ -33,6 +33,27 @@ export interface QuizQuestion {
   prompt: string;
   /** Optional emoji/visual rendered with prompt */
   visual?: string;
+  /**
+   * Optional sound cue auto-played when the question appears (and replayable
+   * via a 🔊 button). Useful for "what does X say?" style prompts.
+   */
+  audioCue?:
+    | 'bark'
+    | 'meow'
+    | 'moo'
+    | 'quack'
+    | 'ribbit'
+    | 'chirp'
+    | 'lionRoar'
+    | 'elephant'
+    | 'neigh'
+    | 'buzz'
+    | 'whaleSong'
+    | 'dinoRoar'
+    | 'dragonRoar'
+    | 'phoenixCry'
+    | 'sparkle'
+    | 'bearGrowl';
   options: QuizOption[];
   correctOptionId: string;
 }
@@ -108,10 +129,25 @@ export interface QuizCategoryStats {
   answered: number;
 }
 
+/**
+ * Per-question performance tracker — used by the adaptive picker to
+ * surface questions the child gets wrong more often.
+ */
+export interface QuizQuestionStats {
+  /** Times answered correctly. */
+  correct: number;
+  /** Times answered (any). */
+  answered: number;
+  /** Last attempt epoch ms — used for recency tie-breaking. */
+  lastAt: number;
+}
+
 export interface QuizStats {
   totalCorrect: number;
   totalAnswered: number;
   byCategory: Partial<Record<QuizCategoryId, QuizCategoryStats>>;
+  /** Per-question stats, keyed by question id. Optional for backwards compat. */
+  byQuestion?: Record<string, QuizQuestionStats>;
   updatedAt: number;
 }
 

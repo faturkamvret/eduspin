@@ -190,9 +190,6 @@ function FilterChip({
 }
 
 function DetailModal({ item, onClose }: { item: Collectible; onClose: () => void }) {
-  const collection = useAppStore((s) => s.collection);
-  const owned = collection.items[item.id];
-
   function tap() {
     playCollectibleSfx(item.id, item.category);
   }
@@ -241,12 +238,6 @@ function DetailModal({ item, onClose }: { item: Collectible; onClose: () => void
             {RARITY_LABEL[item.rarity]} · {item.category}
           </div>
           <p className="mt-2 text-sm font-semibold text-slate-600">{item.flavor}</p>
-          {owned && (
-            <div className="mt-2 text-xs font-semibold text-slate-500">
-              Dimiliki {owned.count}× · Pertama didapat:{' '}
-              {new Date(owned.firstPulledAt).toLocaleDateString('id-ID')}
-            </div>
-          )}
           <p className="mt-3 text-xs font-bold text-primary-500">
             Sentuh karakter untuk berinteraksi 👆
           </p>
