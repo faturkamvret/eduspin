@@ -11,6 +11,7 @@ import type {
   PullHistory,
   PullResult,
   QuizCategoryId,
+  QuizQuestionStats,
   QuizStats,
   Rarity,
   Wallet,
@@ -90,7 +91,11 @@ export interface AppState {
   updateProfile: (patch: Partial<Pick<ChildProfile, 'nickname' | 'age' | 'gender'>>) => void;
   resetProfile: () => void;
 
-  recordAnswer: (categoryId: QuizCategoryId, correct: boolean) => void;
+  recordAnswer: (
+    categoryId: QuizCategoryId,
+    correct: boolean,
+    questionId?: string,
+  ) => void;
   finishQuizSession: () => void;
   claimDailyBonus: () =>
     | { ok: true; coinsAdded: number }
@@ -241,11 +246,25 @@ export const useAppStore = create<AppState>()(
           shopOffers: null,
         }),
 
-      recordAnswer: (categoryId, correct) => {
+      recordAnswer: (categoryId, correct, questionId) => {
         const now = Date.now();
         const stats = get().quizStats;
         const cat = stats.byCategory[categoryId] ?? { correct: 0, answered: 0 };
         const wallet = get().wallet;
+
+        // Per-question tracking (preserves previous attempts).
+        const byQuestion = stats.byQuestion ?? {};
+        const nextByQuestion: Record<string, QuizQuestionStats> = questionId
+          ? {
+              ...byQuestion,
+              [questionId]: {
+                correct: (byQuestion[questionId]?.correct ?? 0) + (correct ? 1 : 0),
+                answered: (byQuestion[questionId]?.answered ?? 0) + 1,
+                lastAt: now,
+              },
+            }
+          : byQuestion;
+
         set({
           quizStats: {
             ...stats,
@@ -258,6 +277,7 @@ export const useAppStore = create<AppState>()(
                 correct: cat.correct + (correct ? 1 : 0),
               },
             },
+            byQuestion: nextByQuestion,
             updatedAt: now,
           },
           wallet: correct
