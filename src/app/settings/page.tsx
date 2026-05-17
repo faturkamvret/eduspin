@@ -7,6 +7,7 @@ import { HydrationGate } from '@/components/HydrationGate';
 import { PageShell } from '@/components/PageShell';
 import { sfx, setMuted as setSfxMuted } from '@/lib/sfx';
 import { PITY_EPIC_THRESHOLD, PITY_LEGENDARY_THRESHOLD, RARITY_RATES } from '@/lib/gacha';
+import { SyncBadge } from '@/components/SyncBadge';
 
 const AGES = [3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -61,6 +62,10 @@ function Inner() {
 
   return (
     <PageShell title="⚙️ Pengaturan">
+      <Section title="Sinkronisasi Awan">
+        <SyncBadge variant="full" />
+      </Section>
+
       <Section title="Profil Anak">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-slate-500">Nama panggilan</span>

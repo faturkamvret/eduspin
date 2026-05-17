@@ -55,9 +55,8 @@ inclusion: manual
 # Login ke gcloud
 gcloud auth login
 
-# Buat project baru (ganti PROJECT_ID — harus unik global)
-export PROJECT_ID="eduspin-prod"
-gcloud projects create $PROJECT_ID --name="EduSpin"
+# Project Anda: quiz-play-496610
+export PROJECT_ID="quiz-play-496610"
 
 # Set sebagai project aktif
 gcloud config set project $PROJECT_ID
@@ -65,8 +64,11 @@ gcloud config set project $PROJECT_ID
 
 ### 1.2 Aktifkan Billing
 
-Buka: <https://console.cloud.google.com/billing>
-- Link billing account ke project `eduspin-prod`
+Buka: <https://console.cloud.google.com/billing?project=quiz-play-496610>
+- Pastikan billing account ter-link ke project `quiz-play-496610`
+- ⚠️ **Set Budget Alert dulu** sebelum lanjut: <https://console.cloud.google.com/billing/budgets?project=quiz-play-496610>
+  - Amount: $5 (sesuai kredit Anda)
+  - Alert threshold: 50%, 90%, 100%
 - Kalau Anda baru, klaim **kredit gratis $300 / 90 hari** di sini juga
 
 ### 1.3 Enable APIs yang Diperlukan
@@ -119,7 +121,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 Buka <https://console.firebase.google.com/>:
 1. Klik **Add project**
-2. Pilih existing GCP project: `eduspin-prod`
+2. Pilih existing GCP project: `quiz-play-496610`
 3. Skip Google Analytics (tidak perlu untuk MVP, hindari tracking anak)
 
 ### 2.2 Aktifkan Anonymous Auth
@@ -142,11 +144,11 @@ Firebase Console → ⚙️ **Project settings** → **General** → scroll ke "
 Salin nilai berikut (akan dipakai di Fase 3):
 ```
 apiKey:           AIzaSy...
-authDomain:       eduspin-prod.firebaseapp.com
-projectId:        eduspin-prod
-storageBucket:    eduspin-prod.firebasestorage.app
-messagingSenderId: 123456789012
-appId:            1:1234:web:abcd...
+authDomain:       quiz-play-496610.firebaseapp.com
+projectId:        quiz-play-496610
+storageBucket:    quiz-play-496610.firebasestorage.app
+messagingSenderId: <generated>
+appId:            1:xxx:web:xxx...
 ```
 
 ### 2.5 Deploy Firestore Rules
@@ -158,7 +160,7 @@ firebase login
 
 # Dari root repo
 cd /path/to/eduspin
-firebase use --add  # pilih eduspin-prod, alias "default"
+firebase use --add  # pilih quiz-play-496610, alias "default"
 firebase deploy --only firestore:rules
 ```
 
@@ -197,12 +199,12 @@ Masih di Cloud Build → **Triggers** → klik **"+ Create Trigger"**:
 
 | Variable | Value (dari Fase 2.4) |
 |---|---|
-| `_FB_API_KEY` | `AIzaSy...` |
-| `_FB_AUTH_DOMAIN` | `eduspin-prod.firebaseapp.com` |
-| `_FB_PROJECT_ID` | `eduspin-prod` |
-| `_FB_BUCKET` | `eduspin-prod.firebasestorage.app` |
-| `_FB_SENDER_ID` | `123456789012` |
-| `_FB_APP_ID` | `1:1234:web:abcd...` |
+| `_FB_API_KEY` | `AIzaSy...` (dari Firebase config) |
+| `_FB_AUTH_DOMAIN` | `quiz-play-496610.firebaseapp.com` |
+| `_FB_PROJECT_ID` | `quiz-play-496610` |
+| `_FB_BUCKET` | `quiz-play-496610.firebasestorage.app` |
+| `_FB_SENDER_ID` | (dari Firebase config) |
+| `_FB_APP_ID` | `1:xxx:web:xxx...` |
 | `_FB_ENABLED` | `true` |
 
 > 💡 Substitution lain seperti `_REGION`, `_SERVICE`, `_REPO` sudah punya default di `cloudbuild.yaml`, tidak perlu diisi.
@@ -255,6 +257,20 @@ Output: `https://eduspin-xxxxxxxxxx-et.a.run.app`
 Anonymous Auth perlu tahu domain yang diperbolehkan:
 
 Firebase Console → **Authentication** → **Settings** → **Authorized domains** → **Add domain** → paste hostname Cloud Run (tanpa `https://`, contoh: `eduspin-xxxxxxxxxx-et.a.run.app`).
+
+### 4.4 Verifikasi Cloud Sync
+
+Buka aplikasi:
+1. Onboarding (isi nama + umur)
+2. Mainkan kuis sebentar untuk dapat koin
+3. Lihat header home — badge sync akan menampilkan ☁️ "Tersimpan"
+4. Buka Firebase Console → **Firestore Database** → koleksi `profiles` → akan ada 1 dokumen dengan uid Anda
+5. Test ketahanan: hapus cache browser → buka lagi → progres harus pulih dari cloud ✨
+
+Kalau badge menampilkan:
+- 💾 **Lokal** → Firebase env tidak ter-set di Cloud Build (cek substitusi `_FB_ENABLED=true`)
+- ⚠️ **Gagal sync** → cek browser console + Firebase Authorized Domains
+- 📡 **Offline** → wajar, akan retry otomatis saat online
 
 ---
 

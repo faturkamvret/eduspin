@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
-import { ensureAnonymousUser, isFirebaseEnabled } from '@/lib/firebase';
 
 export default function HomeRedirect() {
   return (
@@ -19,12 +18,6 @@ function Inner() {
   const profile = useAppStore((s) => s.profile);
 
   useEffect(() => {
-    // Best-effort: kick off anonymous auth in background if Firebase is configured.
-    if (isFirebaseEnabled) {
-      ensureAnonymousUser().catch(() => {
-        /* ignore — app still works fully offline */
-      });
-    }
     if (profile) {
       router.replace('/home');
     } else {
