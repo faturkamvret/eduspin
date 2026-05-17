@@ -10,7 +10,7 @@ FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 
 # ─────────────────────────────────────────────
 # 2) builder: build Next.js app
