@@ -12,7 +12,7 @@ import { Mascot } from '@/components/Mascot';
 import { COLLECTIBLES } from '@/data/collectibles';
 import { sfx, playCollectibleSfx } from '@/lib/sfx';
 import { RARITY_LABEL } from '@/lib/utils';
-import type { Collectible, Rarity } from '@/types';
+import type { Collectible, Gender, Rarity } from '@/types';
 
 const SHOP_RARITIES: Rarity[] = ['common', 'rare'];
 
@@ -40,10 +40,17 @@ function Inner() {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
 
-  const items = useMemo(
-    () => COLLECTIBLES.filter((c) => c.rarity === tab),
-    [tab],
-  );
+  const items = useMemo(() => {
+    const gender: Gender = profile?.gender ?? 'boy';
+    return COLLECTIBLES
+      .filter((c) => c.rarity === tab)
+      .sort((a, b) => {
+        // Gender-match first, then unisex, then other
+        const scoreA = a.gender === gender ? 0 : a.gender === 'unisex' ? 1 : 2;
+        const scoreB = b.gender === gender ? 0 : b.gender === 'unisex' ? 1 : 2;
+        return scoreA - scoreB;
+      });
+  }, [tab, profile?.gender]);
 
   if (!profile) return null;
 

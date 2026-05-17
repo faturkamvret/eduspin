@@ -9,6 +9,7 @@ import { Mascot } from '@/components/Mascot';
 import { Confetti } from '@/components/Confetti';
 import { FloatingDeco } from '@/components/FloatingDeco';
 import { sfx } from '@/lib/sfx';
+import type { Gender } from '@/types';
 
 const AGE_OPTIONS = [
   { value: 1, label: '1', emoji: '🍼' },
@@ -32,10 +33,11 @@ function Inner() {
   const setProfile = useAppStore((s) => s.setProfile);
   const existing = useAppStore((s) => s.profile);
 
-  const [step, setStep] = useState<'welcome' | 'name' | 'age'>(
+  const [step, setStep] = useState<'welcome' | 'name' | 'gender' | 'age'>(
     existing ? 'name' : 'welcome',
   );
   const [nickname, setNickname] = useState(existing?.nickname ?? '');
+  const [gender, setGender] = useState<Gender | null>(existing?.gender ?? null);
   const [age, setAge] = useState<number | null>(existing?.age ?? null);
   const [confetti, setConfetti] = useState(false);
 
@@ -43,8 +45,8 @@ function Inner() {
   const canContinueName = trimmed.length >= 1 && trimmed.length <= 20;
 
   function handleSubmit() {
-    if (!canContinueName || age === null) return;
-    setProfile(trimmed, age);
+    if (!canContinueName || gender === null || age === null) return;
+    setProfile(trimmed, age, gender);
     sfx.fanfare();
     setConfetti(true);
     setTimeout(() => router.replace('/home'), 800);
@@ -143,6 +145,109 @@ function Inner() {
                 disabled={!canContinueName}
                 onClick={() => {
                   sfx.click();
+                  setStep('gender');
+                }}
+              >
+                Lanjut →
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === 'gender' && (
+          <motion.div
+            key="gender"
+            initial={{ opacity: 0, x: 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -32 }}
+            transition={{ type: 'spring', damping: 16 }}
+            className="card flex w-full max-w-sm flex-col gap-4"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <Mascot mood="happy" bubble={`Halo ${trimmed}!`} />
+            </div>
+            <h2 className="text-center font-display text-2xl font-extrabold text-slate-800">
+              Kamu anak...? 🌟
+            </h2>
+            <p className="text-center text-sm font-semibold text-slate-600">
+              Hadiah akan disesuaikan untukmu!
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => {
+                  sfx.click();
+                  setGender('boy');
+                }}
+                className={`flex flex-col items-center gap-2 rounded-4xl py-6 font-display shadow-kid transition-all ${
+                  gender === 'boy'
+                    ? 'scale-105 ring-4 ring-sky-400'
+                    : 'bg-white hover:bg-sky-50'
+                }`}
+                style={
+                  gender === 'boy'
+                    ? { background: 'linear-gradient(135deg, #bae3ff 0%, #7dd3fc 50%, #38bdf8 100%)' }
+                    : undefined
+                }
+                aria-pressed={gender === 'boy'}
+                aria-label="Laki-laki"
+              >
+                <span className="text-6xl drop-shadow" aria-hidden>
+                  👦
+                </span>
+                <span className={`text-xl font-extrabold ${gender === 'boy' ? 'text-white' : 'text-slate-700'}`}>
+                  Laki-laki
+                </span>
+              </motion.button>
+
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => {
+                  sfx.click();
+                  setGender('girl');
+                }}
+                className={`flex flex-col items-center gap-2 rounded-4xl py-6 font-display shadow-kid transition-all ${
+                  gender === 'girl'
+                    ? 'scale-105 ring-4 ring-pink-400'
+                    : 'bg-white hover:bg-pink-50'
+                }`}
+                style={
+                  gender === 'girl'
+                    ? { background: 'linear-gradient(135deg, #ffc6d4 0%, #ff8fa3 50%, #ff5d7a 100%)' }
+                    : undefined
+                }
+                aria-pressed={gender === 'girl'}
+                aria-label="Perempuan"
+              >
+                <span className="text-6xl drop-shadow" aria-hidden>
+                  👧
+                </span>
+                <span className={`text-xl font-extrabold ${gender === 'girl' ? 'text-white' : 'text-slate-700'}`}>
+                  Perempuan
+                </span>
+              </motion.button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="btn-ghost flex-1"
+                onClick={() => {
+                  sfx.click();
+                  setStep('name');
+                }}
+              >
+                ← Kembali
+              </button>
+              <button
+                type="button"
+                className="btn-primary flex-1"
+                disabled={gender === null}
+                onClick={() => {
+                  sfx.click();
                   setStep('age');
                 }}
               >
@@ -162,7 +267,7 @@ function Inner() {
             className="card flex w-full max-w-sm flex-col gap-4"
           >
             <div className="flex flex-col items-center gap-2">
-              <Mascot mood="celebrate" bubble={`Halo ${trimmed}!`} />
+              <Mascot mood="celebrate" bubble="Satu lagi!" />
             </div>
             <h2 className="text-center font-display text-2xl font-extrabold text-slate-800">
               Berapa umurmu? 🎂
@@ -202,7 +307,7 @@ function Inner() {
                 className="btn-ghost flex-1"
                 onClick={() => {
                   sfx.click();
-                  setStep('name');
+                  setStep('gender');
                 }}
               >
                 ← Kembali
