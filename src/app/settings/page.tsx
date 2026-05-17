@@ -10,6 +10,7 @@ import { sfx, setMuted as setSfxMuted } from '@/lib/sfx';
 import { PITY_EPIC_THRESHOLD, PITY_LEGENDARY_THRESHOLD, RARITY_RATES } from '@/lib/gacha';
 import { SHOP_PRICES } from '@/store/useAppStore';
 import { SyncBadge } from '@/components/SyncBadge';
+import type { Gender } from '@/types';
 
 const AGE_OPTIONS = [
   { value: 1, label: '1', emoji: '🍼' },
@@ -122,6 +123,40 @@ function Inner() {
                 <span className="text-lg font-extrabold">{opt.label}</span>
               </motion.button>
             ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+            Gender (mengubah ini menyesuaikan hadiah koleksi)
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {([['boy', '👦', 'Laki-laki'], ['girl', '👧', 'Perempuan']] as const).map(
+              ([g, emoji, label]) => (
+                <motion.button
+                  key={g}
+                  type="button"
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => {
+                    updateProfile({ gender: g as Gender });
+                    sfx.click();
+                  }}
+                  className={`flex items-center justify-center gap-2 rounded-3xl py-3 font-display shadow-kid transition-all ${
+                    profile.gender === g
+                      ? g === 'boy'
+                        ? 'bg-gradient-to-r from-sky-300 to-blue-400 text-white ring-4 ring-sky-300'
+                        : 'bg-gradient-to-r from-pink-300 to-rose-400 text-white ring-4 ring-pink-300'
+                      : 'bg-white text-slate-700'
+                  }`}
+                  aria-pressed={profile.gender === g}
+                >
+                  <span className="text-2xl" aria-hidden>
+                    {emoji}
+                  </span>
+                  <span className="text-base font-extrabold">{label}</span>
+                </motion.button>
+              ),
+            )}
           </div>
         </div>
       </Section>

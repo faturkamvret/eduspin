@@ -7,6 +7,7 @@ import type {
   ChildProfile,
   Collection,
   Collectible,
+  Gender,
   PullHistory,
   PullResult,
   QuizCategoryId,
@@ -67,8 +68,8 @@ export interface AppState {
    */
   hydrateFromCloud: (snapshot: CloudSnapshot) => void;
 
-  setProfile: (nickname: string, age: number) => void;
-  updateProfile: (patch: Partial<Pick<ChildProfile, 'nickname' | 'age'>>) => void;
+  setProfile: (nickname: string, age: number, gender: Gender) => void;
+  updateProfile: (patch: Partial<Pick<ChildProfile, 'nickname' | 'age' | 'gender'>>) => void;
   resetProfile: () => void;
 
   recordAnswer: (categoryId: QuizCategoryId, correct: boolean) => void;
@@ -163,7 +164,7 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      setProfile: (nickname, age) => {
+      setProfile: (nickname, age, gender) => {
         const now = Date.now();
         const trimmed = nickname.trim().slice(0, 20);
         const safeAge = Math.max(1, Math.min(6, Math.round(age)));
@@ -172,6 +173,7 @@ export const useAppStore = create<AppState>()(
             uid: get().profile?.uid ?? `local-${now}`,
             nickname: trimmed,
             age: safeAge,
+            gender,
             createdAt: get().profile?.createdAt ?? now,
             updatedAt: now,
           },
@@ -191,6 +193,7 @@ export const useAppStore = create<AppState>()(
             ...(patch.age !== undefined
               ? { age: Math.max(1, Math.min(6, Math.round(patch.age))) }
               : {}),
+            ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
             updatedAt: now,
           },
         });
@@ -276,12 +279,17 @@ export const useAppStore = create<AppState>()(
         if (wallet.coins < COIN_PER_PULL) {
           return { ok: false, reason: 'not-enough-coins' };
         }
+        const profile = get().profile;
+        const gender = profile?.gender ?? 'boy';
         const pity = get().pity;
-        const { result, nextState } = performPull({
-          totalPulls: pity.totalPulls,
-          pityCounterEpic: pity.pityCounterEpic,
-          pityCounterLegendary: pity.pityCounterLegendary,
-        });
+        const { result, nextState } = performPull(
+          {
+            totalPulls: pity.totalPulls,
+            pityCounterEpic: pity.pityCounterEpic,
+            pityCounterLegendary: pity.pityCounterLegendary,
+          },
+          gender,
+        );
 
         const now = Date.now();
         const collection = get().collection;

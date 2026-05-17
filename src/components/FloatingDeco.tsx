@@ -2,14 +2,19 @@
 
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
+import type { Gender } from '@/types';
 
+const EMOJIS_BOY = ['⭐', '🚀', '⚽', '🦖', '🏎️', '✈️', '🤖', '💙', '🔵', '⚡'];
+const EMOJIS_GIRL = ['⭐', '🦋', '🌸', '🌹', '💖', '👑', '🧁', '🎀', '💜', '✨'];
 const DEFAULT_EMOJIS = ['⭐', '☁️', '🌈', '✨', '🎈', '💖', '🍬', '🌸'];
 
 interface Props {
   /** Number of floating items. Default: 12 */
   count?: number;
-  /** Custom emoji set */
+  /** Custom emoji set — overrides gender-based selection */
   emojis?: string[];
+  /** Child gender — selects emoji set automatically when emojis not provided */
+  gender?: Gender;
   /** Z-index relative to siblings. Default: behind everything (-z-10) */
   z?: 'back' | 'front';
 }
@@ -18,12 +23,13 @@ interface Props {
  * Decorative floating emojis sprinkled across the background.
  * Positioned absolutely; parent should be `relative` (or use full-screen mode).
  */
-export function FloatingDeco({ count = 12, emojis = DEFAULT_EMOJIS, z = 'back' }: Props) {
+export function FloatingDeco({ count = 12, emojis, gender, z = 'back' }: Props) {
+  const emojiSet = emojis ?? (gender === 'boy' ? EMOJIS_BOY : gender === 'girl' ? EMOJIS_GIRL : DEFAULT_EMOJIS);
   const items = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
         id: i,
-        emoji: emojis[Math.floor(Math.random() * emojis.length)]!,
+        emoji: emojiSet[Math.floor(Math.random() * emojiSet.length)]!,
         x: Math.random() * 90 + 5,
         y: Math.random() * 90 + 5,
         size: 18 + Math.random() * 26,
@@ -31,7 +37,7 @@ export function FloatingDeco({ count = 12, emojis = DEFAULT_EMOJIS, z = 'back' }
         duration: 4 + Math.random() * 3,
         opacity: 0.35 + Math.random() * 0.4,
       })),
-    [count, emojis],
+    [count, emojiSet],
   );
 
   return (

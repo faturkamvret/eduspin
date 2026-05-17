@@ -62,7 +62,7 @@ function Inner() {
 
   return (
     <main className="relative flex flex-1 flex-col gap-4 px-4 py-4">
-      <FloatingDeco count={14} />
+      <FloatingDeco count={14} gender={profile.gender} />
       <Confetti show={confetti} count={40} />
 
       {/* Header */}
