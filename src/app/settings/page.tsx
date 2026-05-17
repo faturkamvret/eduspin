@@ -35,6 +35,7 @@ function Inner() {
   const settings = useAppStore((s) => s.settings);
   const updateProfile = useAppStore((s) => s.updateProfile);
   const setMuted = useAppStore((s) => s.setMuted);
+  const setBgmEnabled = useAppStore((s) => s.setBgmEnabled);
   const resetProfile = useAppStore((s) => s.resetProfile);
 
   const [nickname, setNickname] = useState(profile?.nickname ?? '');
@@ -63,6 +64,13 @@ function Inner() {
     setMuted(next);
     setSfxMuted(next);
     if (!next) sfx.click();
+  }
+
+  function toggleBgm() {
+    if (settings.muted) return;
+    const next = !(settings.bgmEnabled ?? false);
+    setBgmEnabled(next);
+    sfx.click();
   }
 
   function doReset() {
@@ -180,6 +188,35 @@ function Inner() {
             />
           </button>
         </label>
+        <label className="flex items-center justify-between">
+          <span className="font-display font-bold">
+            Musik latar lembut
+            <span className="ml-1 text-xs font-semibold text-slate-500">
+              (default mati)
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={toggleBgm}
+            className={`relative h-8 w-16 rounded-full transition-colors shadow-inner ${
+              settings.bgmEnabled && !settings.muted ? 'bg-accent-500' : 'bg-slate-300'
+            }`}
+            aria-pressed={settings.bgmEnabled ?? false}
+            aria-label="Toggle musik latar"
+            disabled={settings.muted}
+          >
+            <motion.span
+              animate={{ x: settings.bgmEnabled && !settings.muted ? 32 : 2 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+              className="absolute top-1 block h-6 w-6 rounded-full bg-white shadow-md"
+            />
+          </button>
+        </label>
+        {settings.muted && settings.bgmEnabled && (
+          <p className="text-xs font-semibold text-slate-500">
+            Suara dibisukan total — musik latar mengikuti.
+          </p>
+        )}
       </Section>
 
       <Section title="🛍️ Toko Hadiah">

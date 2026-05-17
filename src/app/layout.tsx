@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { AppProviders } from '@/components/AppProviders';
 
 export const metadata: Metadata = {
   title: 'EduSpin — Belajar Sambil Bermain',
@@ -20,7 +21,9 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body>
-        <div className="mx-auto flex min-h-screen max-w-md flex-col">{children}</div>
+        <AppProviders>
+          <div className="mx-auto flex min-h-screen max-w-md flex-col">{children}</div>
+        </AppProviders>
       </body>
     </html>
   );
