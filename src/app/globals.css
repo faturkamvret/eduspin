@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  body {
+    @apply font-body text-slate-800 antialiased;
+    background:
+      radial-gradient(circle at 10% 0%, #fde68a 0%, transparent 40%),
+      radial-gradient(circle at 90% 100%, #c4b5fd 0%, transparent 40%),
+      linear-gradient(135deg, #fff7ed 0%, #fef3c7 50%, #f5f3ff 100%);
+    min-height: 100vh;
+  }
+
+  button {
+    @apply select-none;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-semibold
+           shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-primary-500 text-white hover:bg-primary-600;
+  }
+  .btn-accent {
+    @apply btn bg-accent-500 text-white hover:bg-accent-600;
+  }
+  .btn-ghost {
+    @apply btn bg-white/70 text-slate-700 hover:bg-white;
+  }
+
+  .card {
+    @apply rounded-3xl bg-white/80 p-6 shadow-lg backdrop-blur;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-sm font-bold;
+  }
+}

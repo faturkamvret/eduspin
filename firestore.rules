@@ -1,0 +1,27 @@
+// Firestore Security Rules for EduSpin.
+// Each anonymous user (uid) only has read/write access to their own profile tree.
+// Deploy with: firebase deploy --only firestore:rules
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /profiles/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

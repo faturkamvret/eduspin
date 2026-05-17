@@ -1,0 +1,112 @@
+// Shared domain types for EduSpin
+
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+export type QuizCategoryId = 'shape' | 'color' | 'animal' | 'counting';
+
+export interface QuizCategoryMeta {
+  id: QuizCategoryId;
+  label: string;
+  emoji: string;
+  description: string;
+  color: string; // tailwind bg class
+}
+
+export interface QuizQuestion {
+  id: string;
+  category: QuizCategoryId;
+  ageMin: number;
+  ageMax: number;
+  difficulty: 1 | 2 | 3;
+  prompt: string;
+  /** Optional emoji/visual rendered with prompt */
+  visual?: string;
+  options: QuizOption[];
+  correctOptionId: string;
+}
+
+export interface QuizOption {
+  id: string;
+  label: string;
+  /** Optional emoji / single character visual */
+  visual?: string;
+}
+
+export type CollectibleCategory =
+  | 'animal'
+  | 'fruit'
+  | 'robot'
+  | 'dinosaur'
+  | 'fantasy'
+  | 'food';
+
+export interface Collectible {
+  id: string;
+  name: string;
+  category: CollectibleCategory;
+  rarity: Rarity;
+  /** Emoji used as visual placeholder in MVP */
+  emoji: string;
+  /** Tailwind gradient classes for capsule background */
+  gradient: string;
+  /** SFX file path under /public, optional */
+  sfx?: string;
+  /** Short flavor text */
+  flavor: string;
+}
+
+export interface ChildProfile {
+  uid: string;
+  nickname: string;
+  age: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Wallet {
+  coins: number;
+  totalEarned: number;
+  lastDailyClaim: number | null;
+  updatedAt: number;
+}
+
+export interface PullHistory {
+  totalPulls: number;
+  pityCounterEpic: number;
+  pityCounterLegendary: number;
+  updatedAt: number;
+}
+
+export interface CollectionEntry {
+  count: number;
+  firstPulledAt: number;
+}
+
+export interface Collection {
+  items: Record<string, CollectionEntry>;
+  updatedAt: number;
+}
+
+export interface QuizCategoryStats {
+  correct: number;
+  answered: number;
+}
+
+export interface QuizStats {
+  totalCorrect: number;
+  totalAnswered: number;
+  byCategory: Partial<Record<QuizCategoryId, QuizCategoryStats>>;
+  updatedAt: number;
+}
+
+export interface AppSettings {
+  muted: boolean;
+}
+
+export interface PullResult {
+  collectible: Collectible;
+  rarity: Rarity;
+  /** Was this pull boosted by pity? */
+  pityTriggered: 'epic' | 'legendary' | null;
+  pullNumber: number;
+}
