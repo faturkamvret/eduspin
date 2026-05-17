@@ -34,19 +34,19 @@ function Inner() {
   const profile = useAppStore((s) => s.profile);
   const collection = useAppStore((s) => s.collection);
   const [active, setActive] = useState<Collectible | null>(null);
-  const [filter, setFilter] = useState<Rarity | 'all'>('all');
 
+  // All items grouped by rarity. The filter row was removed because it
+  // distracted kids — they just want to see their pets, not control filters.
   const grouped = useMemo(() => {
-    const items = COLLECTIBLES.filter((c) => filter === 'all' || c.rarity === filter);
     const map: Record<Rarity, Collectible[]> = {
       common: [],
       rare: [],
       epic: [],
       legendary: [],
     };
-    for (const c of items) map[c.rarity].push(c);
+    for (const c of COLLECTIBLES) map[c.rarity].push(c);
     return map;
-  }, [filter]);
+  }, []);
 
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
@@ -82,19 +82,6 @@ function Inner() {
         <div className="text-4xl drop-shadow" aria-hidden>
           🏆
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <FilterChip label="Semua" active={filter === 'all'} onClick={() => setFilter('all')} />
-        {RARITY_ORDER.map((r) => (
-          <FilterChip
-            key={r}
-            label={RARITY_LABEL[r]}
-            active={filter === r}
-            onClick={() => setFilter(r)}
-            tone={r}
-          />
-        ))}
       </div>
 
       {RARITY_ORDER.map((r) =>
@@ -155,37 +142,6 @@ function Inner() {
         {active && <DetailModal item={active} onClose={() => setActive(null)} />}
       </AnimatePresence>
     </PageShell>
-  );
-}
-
-function FilterChip({
-  label,
-  active,
-  onClick,
-  tone,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  tone?: Rarity;
-}) {
-  const activeGradient = tone
-    ? `bg-gradient-to-r ${RARITY_HEADING_GRADIENTS[tone]} text-white`
-    : 'bg-gradient-to-r from-pink-400 to-rose-500 text-white';
-  return (
-    <motion.button
-      type="button"
-      whileTap={{ scale: 0.92 }}
-      onClick={() => {
-        sfx.click();
-        onClick();
-      }}
-      className={`rounded-full px-4 py-2 font-display text-sm font-extrabold shadow-kid transition-all ${
-        active ? activeGradient : 'bg-white text-slate-700'
-      }`}
-    >
-      {label}
-    </motion.button>
   );
 }
 
