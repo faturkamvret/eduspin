@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import type { Gender } from '@/types';
 
@@ -20,11 +19,15 @@ interface Props {
 }
 
 /**
- * Decorative floating emojis sprinkled across the background.
+ * Static decorative emojis sprinkled across the background.
  * Positioned absolutely; parent should be `relative` (or use full-screen mode).
+ * No animation — keeps render cost very low.
  */
 export function FloatingDeco({ count = 12, emojis, gender, z = 'back' }: Props) {
-  const emojiSet = emojis ?? (gender === 'boy' ? EMOJIS_BOY : gender === 'girl' ? EMOJIS_GIRL : DEFAULT_EMOJIS);
+  const emojiSet =
+    emojis ??
+    (gender === 'boy' ? EMOJIS_BOY : gender === 'girl' ? EMOJIS_GIRL : DEFAULT_EMOJIS);
+
   const items = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
@@ -32,10 +35,9 @@ export function FloatingDeco({ count = 12, emojis, gender, z = 'back' }: Props) 
         emoji: emojiSet[Math.floor(Math.random() * emojiSet.length)]!,
         x: Math.random() * 90 + 5,
         y: Math.random() * 90 + 5,
-        size: 18 + Math.random() * 26,
-        delay: Math.random() * 4,
-        duration: 4 + Math.random() * 3,
-        opacity: 0.35 + Math.random() * 0.4,
+        size: 18 + Math.random() * 24,
+        rotate: Math.random() * 30 - 15,
+        opacity: 0.3 + Math.random() * 0.35,
       })),
     [count, emojiSet],
   );
@@ -48,29 +50,19 @@ export function FloatingDeco({ count = 12, emojis, gender, z = 'back' }: Props) 
       }`}
     >
       {items.map((it) => (
-        <motion.span
+        <span
           key={it.id}
-          initial={{ y: 0, rotate: 0 }}
-          animate={{
-            y: [0, -16, 0, 16, 0],
-            rotate: [-10, 10, -10],
-          }}
-          transition={{
-            repeat: Infinity,
-            duration: it.duration,
-            delay: it.delay,
-            ease: 'easeInOut',
-          }}
           style={{
             position: 'absolute',
             left: `${it.x}%`,
             top: `${it.y}%`,
             fontSize: it.size,
             opacity: it.opacity,
+            transform: `rotate(${it.rotate}deg)`,
           }}
         >
           {it.emoji}
-        </motion.span>
+        </span>
       ))}
     </div>
   );

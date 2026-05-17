@@ -16,7 +16,7 @@ import type {
   Wallet,
 } from '@/types';
 import { performPull } from '@/lib/gacha';
-import { getCollectibleById } from '@/data/collectibles';
+import { getCollectibleById, getCollectiblesForGender } from '@/data/collectibles';
 
 const COIN_PER_CORRECT = 1;
 const COIN_BONUS_PER_SESSION = 5;
@@ -39,6 +39,17 @@ export function getShopPrice(item: Collectible): number | null {
 
 export type SyncStatus = 'disabled' | 'connecting' | 'syncing' | 'synced' | 'offline' | 'error';
 
+const SHOP_ROTATION_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const SHOP_COMMON_COUNT = 4;
+const SHOP_RARE_COUNT = 4;
+
+export interface ShopOffers {
+  /** Collectible IDs currently on offer */
+  itemIds: string[];
+  /** Timestamp when this offer set was generated */
+  rotatedAt: number;
+}
+
 export interface AppState {
   /** Hydration flag. UI should wait until this is true before rendering. */
   hydrated: boolean;
@@ -56,6 +67,8 @@ export interface AppState {
   collection: Collection;
   quizStats: QuizStats;
   settings: AppSettings;
+  /** Currently displayed shop offers (4 common + 4 rare, rotates every 24h). */
+  shopOffers: ShopOffers | null;
 
   // ─── actions ───
   setHydrated: () => void;
@@ -95,6 +108,13 @@ export interface AppState {
         ok: false;
         reason: 'not-for-sale' | 'already-owned' | 'not-enough-coins' | 'unknown-item';
       };
+
+  /**
+   * Get the current shop offers, rotating if 24h has passed (or no offers yet).
+   * Always returns a stable list of 4 Common + 4 Rare collectible IDs.
+   * Filtered by child gender (strict: only boy+unisex or girl+unisex).
+   */
+  getOrRotateShopOffers: () => ShopOffers;
 
   setMuted: (muted: boolean) => void;
 }
@@ -147,6 +167,7 @@ export const useAppStore = create<AppState>()(
       collection: emptyCollection(),
       quizStats: emptyQuizStats(),
       settings: { muted: false },
+      shopOffers: null,
 
       setHydrated: () => set({ hydrated: true }),
       setSyncStatus: (syncStatus) => set({ syncStatus }),
@@ -184,6 +205,7 @@ export const useAppStore = create<AppState>()(
         const cur = get().profile;
         if (!cur) return;
         const now = Date.now();
+        const genderChanged = patch.gender !== undefined && patch.gender !== cur.gender;
         set({
           profile: {
             ...cur,
@@ -196,6 +218,8 @@ export const useAppStore = create<AppState>()(
             ...(patch.gender !== undefined ? { gender: patch.gender } : {}),
             updatedAt: now,
           },
+          // Invalidate shop offers when gender changes — they'll regenerate next visit
+          ...(genderChanged ? { shopOffers: null } : {}),
         });
       },
 
@@ -207,6 +231,7 @@ export const useAppStore = create<AppState>()(
           collection: emptyCollection(),
           quizStats: emptyQuizStats(),
           settings: { muted: false },
+          shopOffers: null,
         }),
 
       recordAnswer: (categoryId, correct) => {
@@ -352,6 +377,40 @@ export const useAppStore = create<AppState>()(
         return { ok: true, price, item };
       },
 
+      getOrRotateShopOffers: () => {
+        const now = Date.now();
+        const current = get().shopOffers;
+        const isStale =
+          !current || now - current.rotatedAt >= SHOP_ROTATION_INTERVAL_MS;
+
+        if (!isStale && current) return current;
+
+        // Generate fresh offers based on child gender
+        const gender: Gender = get().profile?.gender ?? 'boy';
+        const pool = getCollectiblesForGender(gender);
+
+        const commons = pool.filter((c) => c.rarity === 'common');
+        const rares = pool.filter((c) => c.rarity === 'rare');
+
+        const sample = <T,>(arr: T[], n: number): T[] => {
+          const copy = [...arr];
+          for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+          }
+          return copy.slice(0, Math.min(n, copy.length));
+        };
+
+        const itemIds = [
+          ...sample(commons, SHOP_COMMON_COUNT),
+          ...sample(rares, SHOP_RARE_COUNT),
+        ].map((c) => c.id);
+
+        const fresh: ShopOffers = { itemIds, rotatedAt: now };
+        set({ shopOffers: fresh });
+        return fresh;
+      },
+
       setMuted: (muted) => set({ settings: { ...get().settings, muted } }),
     }),
     {
@@ -366,6 +425,7 @@ export const useAppStore = create<AppState>()(
         collection: state.collection,
         quizStats: state.quizStats,
         settings: state.settings,
+        shopOffers: state.shopOffers,
       }),
       onRehydrateStorage: () => (state) => {
         // Mark hydrated after persist middleware finishes loading

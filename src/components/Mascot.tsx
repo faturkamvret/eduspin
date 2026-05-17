@@ -1,15 +1,16 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useAnimationControls } from 'framer-motion';
+import { sfx } from '@/lib/sfx';
 
 type MoodKey = 'happy' | 'cheer' | 'thinking' | 'celebrate' | 'sleepy';
 
-const MOODS: Record<MoodKey, { emoji: string; bubble?: string }> = {
-  happy: { emoji: '🐻', bubble: 'Halo!' },
-  cheer: { emoji: '🦊', bubble: 'Yuk semangat!' },
-  thinking: { emoji: '🐰', bubble: 'Hmm...' },
-  celebrate: { emoji: '🐼', bubble: 'Hebat sekali!' },
-  sleepy: { emoji: '🐨', bubble: 'Z z z...' },
+const MOODS: Record<MoodKey, { emoji: string; bubble?: string; sound: () => void }> = {
+  happy: { emoji: '🐻', bubble: 'Halo!', sound: () => sfx.bearGrowl() },
+  cheer: { emoji: '🦊', bubble: 'Yuk semangat!', sound: () => sfx.bark() },
+  thinking: { emoji: '🐰', bubble: 'Hmm...', sound: () => sfx.click() },
+  celebrate: { emoji: '🐼', bubble: 'Hebat sekali!', sound: () => sfx.fanfare() },
+  sleepy: { emoji: '🐨', bubble: 'Z z z...', sound: () => sfx.click() },
 };
 
 interface Props {
@@ -18,7 +19,7 @@ interface Props {
   bubble?: string;
   /** Size in tailwind classes, e.g. 'text-6xl' */
   size?: string;
-  /** Allow click bounce */
+  /** Allow click bounce + sfx */
   interactive?: boolean;
 }
 
@@ -30,6 +31,18 @@ export function Mascot({
 }: Props) {
   const meta = MOODS[mood];
   const text = bubble ?? meta.bubble;
+  const controls = useAnimationControls();
+
+  function handleClick() {
+    if (!interactive) return;
+    meta.sound();
+    // Squish + happy bounce
+    void controls.start({
+      scale: [1, 0.85, 1.18, 0.95, 1.05, 1],
+      rotate: [0, -10, 10, -6, 4, 0],
+      transition: { duration: 0.7, ease: 'easeOut' },
+    });
+  }
 
   return (
     <div className="relative inline-flex flex-col items-center">
@@ -49,19 +62,11 @@ export function Mascot({
       )}
       <motion.button
         type="button"
-        whileTap={interactive ? { scale: 0.85, rotate: -8 } : undefined}
+        onClick={handleClick}
         whileHover={interactive ? { scale: 1.06, rotate: 4 } : undefined}
-        animate={{
-          y: [0, -6, 0],
-          rotate: [-2, 2, -2],
-        }}
-        transition={{
-          repeat: Infinity,
-          duration: 2.2,
-          ease: 'easeInOut',
-        }}
+        animate={controls}
         className={`${size} drop-shadow-lg`}
-        aria-label={`Mascot ${mood}`}
+        aria-label={`Mascot ${mood} — tap to interact`}
       >
         {meta.emoji}
       </motion.button>

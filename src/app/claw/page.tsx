@@ -5,14 +5,9 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
-import { PageShell } from '@/components/PageShell';
 import { CoinBadge } from '@/components/CoinBadge';
 import { sfx } from '@/lib/sfx';
-import {
-  PITY_EPIC_THRESHOLD,
-  PITY_LEGENDARY_THRESHOLD,
-  RARITY_RATES,
-} from '@/lib/gacha';
+import { PITY_EPIC_THRESHOLD, PITY_LEGENDARY_THRESHOLD } from '@/lib/gacha';
 import type { PullResult } from '@/types';
 import { RARITY_LABEL } from '@/lib/utils';
 
@@ -81,7 +76,26 @@ function Inner() {
   const canPull = phase === 'idle' && wallet.coins >= COIN_CONSTANTS.COIN_PER_PULL;
 
   return (
-    <PageShell title="🎰 Claw Machine" right={<CoinBadge coins={wallet.coins} />}>
+    <main className="relative flex flex-1 flex-col gap-4 px-4 py-4">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            sfx.click();
+            router.push('/home');
+          }}
+          className="rounded-full bg-white px-4 py-2 font-display text-sm font-bold shadow-kid transition-all active:scale-95 hover:bg-slate-50"
+          aria-label="Kembali ke beranda"
+        >
+          🏠 Beranda
+        </button>
+        <h1 className="font-display text-xl font-extrabold text-slate-800 drop-shadow">
+          🎰 Claw Machine
+        </h1>
+        <CoinBadge coins={wallet.coins} />
+      </header>
+
       {/* Pity status (transparent) */}
       <div className="card flex items-center justify-around gap-2 py-3 text-center text-xs">
         <div>
@@ -198,25 +212,6 @@ function Inner() {
         </div>
       )}
 
-      {/* Rate disclosure */}
-      <details className="mx-auto w-full max-w-sm rounded-2xl bg-white/70 px-4 py-2 text-sm">
-        <summary className="cursor-pointer font-bold">Lihat peluang & jaminan</summary>
-        <ul className="mt-2 list-disc space-y-0.5 pl-4 text-slate-700">
-          <li>Biasa: {Math.round(RARITY_RATES.common * 100)}%</li>
-          <li>Langka: {Math.round(RARITY_RATES.rare * 100)}%</li>
-          <li>Epik: {Math.round(RARITY_RATES.epic * 100)}%</li>
-          <li>Legendaris: {Math.round(RARITY_RATES.legendary * 100)}%</li>
-          <li>
-            Setiap {PITY_EPIC_THRESHOLD} tarikan tanpa Epik: tarikan ke-
-            {PITY_EPIC_THRESHOLD} dijamin Epik atau lebih.
-          </li>
-          <li>
-            Setiap {PITY_LEGENDARY_THRESHOLD} tarikan tanpa Legendaris: tarikan ke-
-            {PITY_LEGENDARY_THRESHOLD} dijamin Legendaris.
-          </li>
-        </ul>
-      </details>
-
       {/* Reveal modal */}
       <AnimatePresence>
         {phase === 'reveal' && result && (
@@ -230,7 +225,7 @@ function Inner() {
           />
         )}
       </AnimatePresence>
-    </PageShell>
+    </main>
   );
 }
 

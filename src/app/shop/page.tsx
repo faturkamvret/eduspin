@@ -9,12 +9,11 @@ import { CoinBadge } from '@/components/CoinBadge';
 import { Confetti } from '@/components/Confetti';
 import { FloatingDeco } from '@/components/FloatingDeco';
 import { Mascot } from '@/components/Mascot';
-import { COLLECTIBLES } from '@/data/collectibles';
+import { getCollectibleById } from '@/data/collectibles';
 import { sfx, playCollectibleSfx } from '@/lib/sfx';
-import { RARITY_LABEL } from '@/lib/utils';
-import type { Collectible, Gender, Rarity } from '@/types';
+import type { Collectible } from '@/types';
 
-const SHOP_RARITIES: Rarity[] = ['common', 'rare'];
+const ROTATION_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export default function ShopPage() {
   return (
@@ -30,29 +29,56 @@ function Inner() {
   const wallet = useAppStore((s) => s.wallet);
   const collection = useAppStore((s) => s.collection);
   const buyCollectible = useAppStore((s) => s.buyCollectible);
+  const getOrRotateShopOffers = useAppStore((s) => s.getOrRotateShopOffers);
+  const shopOffers = useAppStore((s) => s.shopOffers);
 
-  const [tab, setTab] = useState<Rarity>('common');
   const [confetti, setConfetti] = useState(false);
   const [purchased, setPurchased] = useState<Collectible | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
 
-  const items = useMemo(() => {
-    const gender: Gender = profile?.gender ?? 'boy';
-    return COLLECTIBLES
-      .filter((c) => c.rarity === tab)
-      .sort((a, b) => {
-        // Gender-match first, then unisex, then other
-        const scoreA = a.gender === gender ? 0 : a.gender === 'unisex' ? 1 : 2;
-        const scoreB = b.gender === gender ? 0 : b.gender === 'unisex' ? 1 : 2;
-        return scoreA - scoreB;
-      });
-  }, [tab, profile?.gender]);
+  // Trigger initial rotation on mount
+  useEffect(() => {
+    if (profile) getOrRotateShopOffers();
+  }, [profile, getOrRotateShopOffers]);
+
+  // Tick every minute for countdown display + auto-rotate when expired
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNow(Date.now());
+      // Auto-refresh offers if stale
+      getOrRotateShopOffers();
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [getOrRotateShopOffers]);
+
+  // Resolve offers → Collectible objects, randomized display order each render of state
+  const items = useMemo<Collectible[]>(() => {
+    if (!shopOffers) return [];
+    const resolved = shopOffers.itemIds
+      .map((id) => getCollectibleById(id))
+      .filter((c): c is Collectible => Boolean(c));
+    // Shuffle for random display (Common & Rare mixed together — no grouping)
+    const shuffled = [...resolved];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+    }
+    return shuffled;
+    // Re-shuffle whenever the offers change (new rotation), not on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shopOffers?.rotatedAt]);
 
   if (!profile) return null;
+
+  const nextRotateAt = (shopOffers?.rotatedAt ?? now) + ROTATION_INTERVAL_MS;
+  const remainingMs = Math.max(0, nextRotateAt - now);
+  const remainingHours = Math.floor(remainingMs / 3_600_000);
+  const remainingMinutes = Math.floor((remainingMs % 3_600_000) / 60_000);
 
   function handleBuy(item: Collectible) {
     const r = buyCollectible(item.id);
@@ -91,7 +117,7 @@ function Inner() {
           className="rounded-full bg-white px-4 py-2 font-display text-sm font-bold shadow-kid"
           aria-label="Kembali ke beranda"
         >
-          ← Beranda
+          🏠 Beranda
         </button>
         <h1 className="font-display text-2xl font-extrabold text-rainbow drop-shadow">
           🛍️ Toko Hadiah
@@ -101,7 +127,7 @@ function Inner() {
 
       {/* Mascot greeting */}
       <div className="flex items-center justify-center gap-3">
-        <Mascot mood="cheer" bubble={`Hai ${profile.nickname}! Pilih hadiahmu ya!`} size="text-5xl" />
+        <Mascot mood="cheer" bubble={`Hai ${profile.nickname}!`} size="text-5xl" />
       </div>
 
       {/* Claw Machine entry — big call-out card */}
@@ -118,15 +144,9 @@ function Inner() {
         }}
         aria-label="Masuk ke Claw Machine"
       >
-        <FloatingDeco count={8} emojis={['🌟', '⭐', '✨']} z="front" />
-        <motion.div
-          animate={{ rotate: [-6, 6, -6], y: [0, -4, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="text-6xl drop-shadow"
-          aria-hidden
-        >
+        <div className="text-6xl drop-shadow" aria-hidden>
           🎰
-        </motion.div>
+        </div>
         <div className="relative z-10 flex-1">
           <div className="font-display text-2xl font-extrabold drop-shadow">
             Claw Machine!
@@ -138,30 +158,20 @@ function Inner() {
         <div className="relative z-10 text-3xl font-bold">→</div>
       </button>
 
-      {/* Tabs */}
-      <div className="flex gap-3">
-        {SHOP_RARITIES.map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => {
-              sfx.click();
-              setTab(r);
-            }}
-            className={`flex-1 rounded-3xl px-4 py-3 font-display text-base font-bold shadow-kid transition-all active:scale-95 ${
-              tab === r
-                ? r === 'common'
-                  ? 'bg-gradient-to-r from-slate-200 to-slate-300 text-slate-800 ring-4 ring-slate-400'
-                  : 'bg-gradient-to-r from-blue-300 to-sky-400 text-white ring-4 ring-blue-500'
-                : 'bg-white text-slate-600'
-            }`}
-          >
-            {r === 'common' ? '⚪ Biasa' : '🔵 Langka'}
-            <div className="mt-0.5 text-xs font-semibold opacity-80">
-              {SHOP_PRICES[r]} 🪙
-            </div>
-          </button>
-        ))}
+      {/* Refresh countdown banner */}
+      <div className="card-color flex items-center justify-between gap-3 bg-gradient-to-r from-amber-100 to-yellow-100 px-5 py-3 text-amber-800">
+        <div className="text-2xl" aria-hidden>
+          ⏰
+        </div>
+        <div className="flex-1 text-center">
+          <div className="text-xs font-bold uppercase tracking-wide">Hadiah baru dalam</div>
+          <div className="font-display text-lg font-extrabold">
+            {remainingHours}j {remainingMinutes}m
+          </div>
+        </div>
+        <div className="text-2xl" aria-hidden>
+          🎁
+        </div>
       </div>
 
       {/* Error toast */}
@@ -178,7 +188,7 @@ function Inner() {
         )}
       </AnimatePresence>
 
-      {/* Item grid */}
+      {/* Item grid — all items mixed together, no rarity grouping */}
       <div className="grid grid-cols-2 gap-4">
         {items.map((item) => {
           const owned = !!collection.items[item.id];
@@ -192,9 +202,6 @@ function Inner() {
               animate={{ opacity: 1, scale: 1 }}
               whileTap={{ scale: 0.97 }}
               className="card-color relative flex flex-col items-center gap-2 overflow-hidden p-4"
-              style={{
-                background: `linear-gradient(135deg, var(--tw-gradient-stops))`,
-              }}
             >
               <div
                 className={`absolute inset-0 -z-10 bg-gradient-to-br ${item.gradient} opacity-80`}
@@ -204,14 +211,9 @@ function Inner() {
                   ✓ Punya
                 </div>
               )}
-              <motion.div
-                animate={{ y: [0, -4, 0], rotate: [-3, 3, -3] }}
-                transition={{ repeat: Infinity, duration: 2.4 }}
-                className="text-6xl drop-shadow-lg"
-                aria-hidden
-              >
+              <div className="text-6xl drop-shadow-lg" aria-hidden>
                 {item.emoji}
-              </motion.div>
+              </div>
               <div className="text-center font-display text-base font-extrabold leading-tight text-slate-800 drop-shadow">
                 {item.name}
               </div>

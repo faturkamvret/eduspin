@@ -139,6 +139,40 @@ export const sfx = {
     tone(c, t + 0.08, { freq: 587.33, durationMs: 80, type: 'triangle' });
     tone(c, t + 0.16, { freq: 880, durationMs: 200, type: 'triangle' });
   },
+  /** Friendly bear growl — low pitched with downward sweep + vibrato. */
+  bearGrowl(): void {
+    if (mutedRef) return;
+    const c = getCtx();
+    if (!c) return;
+    const t = c.currentTime;
+
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    const lfo = c.createOscillator();
+    const lfoGain = c.createGain();
+
+    osc.type = 'sawtooth';
+    // Pitch sweep down: 140 → 80 Hz (low, friendly)
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + 0.45);
+
+    // Vibrato (LFO modulating frequency)
+    lfo.frequency.setValueAtTime(8, t);
+    lfoGain.gain.setValueAtTime(8, t);
+    lfo.connect(lfoGain).connect(osc.frequency);
+
+    // Envelope
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.06);
+    g.gain.setValueAtTime(0.18, t + 0.32);
+    g.gain.linearRampToValueAtTime(0, t + 0.55);
+
+    osc.connect(g).connect(c.destination);
+    osc.start(t);
+    lfo.start(t);
+    osc.stop(t + 0.6);
+    lfo.stop(t + 0.6);
+  },
 };
 
 /** Map a collectible id (or category) to an appropriate SFX. */
