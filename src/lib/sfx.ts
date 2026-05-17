@@ -139,6 +139,49 @@ export const sfx = {
     tone(c, t + 0.08, { freq: 587.33, durationMs: 80, type: 'triangle' });
     tone(c, t + 0.16, { freq: 880, durationMs: 200, type: 'triangle' });
   },
+  /**
+   * Stylized bear growl — low sawtooth with downward pitch sweep + slow vibrato.
+   * Synthesized from oscillators only, no audio assets required.
+   */
+  bearGrowl(): void {
+    if (mutedRef) return;
+    const c = getCtx();
+    if (!c) return;
+    const t = c.currentTime;
+    const dur = 0.7;
+
+    // Main growl oscillator (low, raspy).
+    const osc = c.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(70, t + dur);
+
+    // Slow vibrato to give it a natural rumble.
+    const vibrato = c.createOscillator();
+    vibrato.type = 'sine';
+    vibrato.frequency.setValueAtTime(8, t);
+    const vibratoGain = c.createGain();
+    vibratoGain.gain.setValueAtTime(12, t);
+    vibrato.connect(vibratoGain).connect(osc.frequency);
+
+    // Lowpass to soften the harshness.
+    const filter = c.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(900, t);
+
+    // Amp envelope.
+    const g = c.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.22, t + 0.05);
+    g.gain.linearRampToValueAtTime(0.18, t + dur - 0.15);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+
+    osc.connect(filter).connect(g).connect(c.destination);
+    osc.start(t);
+    vibrato.start(t);
+    osc.stop(t + dur + 0.05);
+    vibrato.stop(t + dur + 0.05);
+  },
 };
 
 /** Map a collectible id (or category) to an appropriate SFX. */

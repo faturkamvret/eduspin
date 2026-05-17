@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useAnimationControls } from 'framer-motion';
+import { sfx } from '@/lib/sfx';
 
 type MoodKey = 'happy' | 'cheer' | 'thinking' | 'celebrate' | 'sleepy';
 
@@ -12,6 +13,8 @@ const MOODS: Record<MoodKey, { emoji: string; bubble?: string }> = {
   sleepy: { emoji: '🐨', bubble: 'Z z z...' },
 };
 
+const BEAR_EMOJIS = new Set(['🐻', '🐼', '🧸']);
+
 interface Props {
   mood?: MoodKey;
   /** Show speech bubble above mascot */
@@ -20,6 +23,8 @@ interface Props {
   size?: string;
   /** Allow click bounce */
   interactive?: boolean;
+  /** Optional override emoji (otherwise picked from mood) */
+  emoji?: string;
 }
 
 export function Mascot({
@@ -27,9 +32,31 @@ export function Mascot({
   bubble,
   size = 'text-6xl',
   interactive = true,
+  emoji,
 }: Props) {
   const meta = MOODS[mood];
   const text = bubble ?? meta.bubble;
+  const visual = emoji ?? meta.emoji;
+  const controls = useAnimationControls();
+
+  const handleClick = async () => {
+    if (!interactive) return;
+    if (BEAR_EMOJIS.has(visual)) {
+      sfx.bearGrowl();
+    } else {
+      sfx.click();
+    }
+    // Squish + small wiggle on tap.
+    try {
+      await controls.start({
+        scale: [1, 1.18, 0.9, 1.05, 1],
+        rotate: [0, -10, 10, -4, 0],
+        transition: { duration: 0.55, ease: 'easeOut' },
+      });
+    } catch {
+      // animation interrupted — fine
+    }
+  };
 
   return (
     <div className="relative inline-flex flex-col items-center">
@@ -49,21 +76,18 @@ export function Mascot({
       )}
       <motion.button
         type="button"
-        whileTap={interactive ? { scale: 0.85, rotate: -8 } : undefined}
-        whileHover={interactive ? { scale: 1.06, rotate: 4 } : undefined}
-        animate={{
-          y: [0, -6, 0],
-          rotate: [-2, 2, -2],
-        }}
-        transition={{
-          repeat: Infinity,
-          duration: 2.2,
-          ease: 'easeInOut',
-        }}
-        className={`${size} drop-shadow-lg`}
-        aria-label={`Mascot ${mood}`}
+        onClick={interactive ? handleClick : undefined}
+        animate={controls}
+        whileTap={interactive ? { scale: 0.92 } : undefined}
+        className={`${size} drop-shadow-lg ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+        aria-label={
+          interactive && BEAR_EMOJIS.has(visual)
+            ? `Maskot ${mood} — ketuk untuk mendengar suara beruang`
+            : `Maskot ${mood}`
+        }
+        disabled={!interactive}
       >
-        {meta.emoji}
+        {visual}
       </motion.button>
     </div>
   );
