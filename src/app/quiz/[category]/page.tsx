@@ -12,7 +12,7 @@ import { FloatingDeco } from '@/components/FloatingDeco';
 import { getCategoryMeta } from '@/data/categories';
 import { pickAdaptiveQuestions } from '@/data/questions';
 import type { QuizCategoryId, QuizQuestion } from '@/types';
-import { sfx } from '@/lib/sfx';
+import { sfx, playAudioCue } from '@/lib/sfx';
 
 const SESSION_LENGTH = 10;
 
@@ -31,13 +31,23 @@ function Inner() {
   const wallet = useAppStore((s) => s.wallet);
   const recordAnswer = useAppStore((s) => s.recordAnswer);
   const finishQuizSession = useAppStore((s) => s.finishQuizSession);
+  const byQuestion = useAppStore((s) => s.quizStats.byQuestion);
 
   const meta = getCategoryMeta(params.category);
   const [sessionKey, setSessionKey] = useState(0);
 
   const questions = useMemo<QuizQuestion[]>(() => {
     if (!profile || !meta) return [];
-    return pickAdaptiveQuestions(meta.id as QuizCategoryId, profile.age, SESSION_LENGTH);
+    return pickAdaptiveQuestions(
+      meta.id as QuizCategoryId,
+      profile.age,
+      SESSION_LENGTH,
+      1,
+      byQuestion,
+    );
+    // sessionKey forces a fresh pick on retry. byQuestion intentionally
+    // excluded from deps so the picked set is stable for the whole session
+    // (otherwise it'd reshuffle after every answer recorded).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, meta, sessionKey]);
 
@@ -52,6 +62,15 @@ function Inner() {
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
+
+  // Auto-play the audio cue when an audio question appears.
+  const currentQuestion = questions[idx];
+  useEffect(() => {
+    if (!currentQuestion?.audioCue) return;
+    // small delay so the question card transition completes first.
+    const id = setTimeout(() => playAudioCue(currentQuestion.audioCue!), 300);
+    return () => clearTimeout(id);
+  }, [currentQuestion]);
 
   const startNewSession = useCallback(() => {
     setSessionKey((k) => k + 1);
@@ -94,7 +113,7 @@ function Inner() {
     } else {
       sfx.wrong();
     }
-    recordAnswer(meta!.id as QuizCategoryId, correct);
+    recordAnswer(meta!.id as QuizCategoryId, correct, q.id);
   }
 
   function onNext() {
@@ -203,6 +222,27 @@ function Inner() {
               {q.visual}
             </motion.div>
           )}
+
+          {/* Audio-cue button — large + obvious for kids */}
+          {q.audioCue && (
+            <motion.button
+              type="button"
+              onClick={() => playAudioCue(q.audioCue!)}
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.06 }}
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ repeat: Infinity, duration: 1.6 }}
+              className="flex h-24 w-24 items-center justify-center rounded-full text-5xl shadow-kid-violet ring-4 ring-white"
+              style={{
+                background: 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #8b5cf6 100%)',
+                color: 'white',
+              }}
+              aria-label="Putar suara"
+            >
+              🔊
+            </motion.button>
+          )}
+
           <h2 className="font-display text-2xl font-extrabold leading-tight text-slate-800">
             {q.prompt}
           </h2>
@@ -222,10 +262,24 @@ function Inner() {
                 <motion.button
                   key={opt.id}
                   type="button"
-                  onClick={() => onPick(opt.id)}
+                  onClick={() => {
+                    if (revealed) return;
+                    sfx.pop();
+                    onPick(opt.id);
+                  }}
                   disabled={revealed}
-                  whileTap={!revealed ? { scale: 0.96 } : undefined}
+                  whileTap={
+                    !revealed ? { scale: 0.93, rotate: -1 } : undefined
+                  }
                   whileHover={!revealed ? { scale: 1.02 } : undefined}
+                  animate={
+                    revealed && isRight
+                      ? { scale: [1, 1.06, 1], rotate: [0, -2, 2, 0] }
+                      : revealed && isSelected && !isRight
+                        ? { x: [0, -8, 8, -6, 6, 0] }
+                        : undefined
+                  }
+                  transition={{ duration: revealed && isRight ? 0.6 : 0.4 }}
                   className={cls}
                 >
                   {opt.visual && (
@@ -275,7 +329,8 @@ function Inner() {
 
 /**
  * FocusShell — quiz auto-focus mode container.
- * No back button. Only an X button in top-right for parent to exit.
+ * Top header has a Beranda (home) button on the left for kids to easily
+ * navigate back, plus an X button on the right for parents to exit.
  */
 function FocusShell({
   children,
@@ -292,21 +347,22 @@ function FocusShell({
     <main className="relative flex flex-1 flex-col gap-5 px-4 py-4">
       <FloatingDeco count={8} emojis={['⭐', '✨', '💖', '🌈']} />
       <header className="flex items-center justify-between gap-2">
-        <CoinBadge coins={coins} />
-        <h1 className="font-display text-lg font-extrabold text-slate-800 drop-shadow">
-          {title}
-        </h1>
-        <button
+        <motion.button
           type="button"
+          whileTap={{ scale: 0.92 }}
           onClick={() => {
             sfx.click();
             onExit();
           }}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl font-extrabold text-rose-500 shadow-kid transition-all active:scale-90 hover:bg-rose-50"
-          aria-label="Keluar dari quiz (orang tua)"
+          className="rounded-full bg-white px-4 py-2 font-display text-sm font-bold shadow-kid transition-all hover:bg-slate-50"
+          aria-label="Ke Beranda"
         >
-          ✕
-        </button>
+          🏠 Beranda
+        </motion.button>
+        <h1 className="font-display text-lg font-extrabold text-slate-800 drop-shadow">
+          {title}
+        </h1>
+        <CoinBadge coins={coins} />
       </header>
       {children}
     </main>

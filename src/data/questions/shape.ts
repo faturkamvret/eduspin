@@ -146,4 +146,34 @@ export const SHAPE_QUESTIONS: QuizQuestion[] = [
     ],
     correctOptionId: 'b',
   },
+  // ─── Extra ───
+  {
+    id: 'shape-11',
+    category: 'shape',
+    ageMin: 2,
+    ageMax: 4,
+    difficulty: 1,
+    prompt: 'Mana bentuk bulan sabit?',
+    options: [
+      { id: 'a', label: 'Bulan sabit', visual: '🌙' },
+      { id: 'b', label: 'Lingkaran', visual: '⚪' },
+      { id: 'c', label: 'Segitiga', visual: '🔺' },
+    ],
+    correctOptionId: 'a',
+  },
+  {
+    id: 'shape-12',
+    category: 'shape',
+    ageMin: 3,
+    ageMax: 6,
+    difficulty: 2,
+    prompt: 'Layang-layang berbentuk seperti apa?',
+    visual: '🪁',
+    options: [
+      { id: 'a', label: 'Belah ketupat', visual: '◇' },
+      { id: 'b', label: 'Lingkaran', visual: '⚪' },
+      { id: 'c', label: 'Segitiga', visual: '🔺' },
+    ],
+    correctOptionId: 'a',
+  },
 ];
