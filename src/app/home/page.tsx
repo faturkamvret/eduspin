@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
@@ -11,11 +11,9 @@ import { Confetti } from '@/components/Confetti';
 import { Mascot } from '@/components/Mascot';
 import { FloatingDeco } from '@/components/FloatingDeco';
 import { sfx } from '@/lib/sfx';
-import { speak } from '@/lib/speech';
 import { triggerFlyingCoin } from '@/components/FlyingCoin';
 import { triggerTapBurst } from '@/components/TapBurst';
 import { COLLECTIBLES } from '@/data/collectibles';
-import { getTodayMission, isSameLocalDay } from '@/data/missions';
 
 export default function HomePage() {
   return (
@@ -61,7 +59,6 @@ function Inner() {
   const collection = useAppStore((s) => s.collection);
   const claimDailyBonus = useAppStore((s) => s.claimDailyBonus);
   const lastPlayedAt = useAppStore((s) => s.lastPlayedAt);
-  const missionProgress = useAppStore((s) => s.missionProgress);
 
   const [bonusMsg, setBonusMsg] = useState<string | null>(null);
   const [confetti, setConfetti] = useState(false);
@@ -69,16 +66,6 @@ function Inner() {
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
-
-  // Today's mission card — narrative driver for the day.
-  const todayMission = useMemo(() => getTodayMission(new Date()), []);
-  const missionTodayProgress =
-    missionProgress &&
-    missionProgress.missionId === todayMission.id &&
-    isSameLocalDay(Date.parse(missionProgress.date + 'T00:00:00'), Date.now())
-      ? missionProgress
-      : null;
-  const missionDoneToday = missionTodayProgress?.rewarded ?? false;
 
   if (!profile) return null;
 
@@ -108,15 +95,6 @@ function Inner() {
       setTimeout(() => setBonusMsg(null), 2500);
     }
   }
-
-  function tellMissionStory() {
-    speak(todayMission.intro, { rate: 0.9, pitch: 1.2 });
-    sfx.click();
-  }
-
-  const missionTarget = todayMission.target;
-  const missionDone = missionTodayProgress?.correct ?? 0;
-  const missionPct = Math.min(100, (missionDone / missionTarget) * 100);
 
   return (
     <main className="relative flex flex-1 flex-col gap-4 px-4 py-4">
@@ -158,59 +136,6 @@ function Inner() {
         </p>
         <SyncBadge />
       </motion.section>
-
-      {/* Today's Mission card */}
-      <motion.button
-        type="button"
-        onClick={tellMissionStory}
-        whileTap={{ scale: 0.98 }}
-        whileHover={{ scale: 1.02 }}
-        className="menu-card text-left"
-        style={{
-          background: missionDoneToday
-            ? 'linear-gradient(135deg, #bbf7d0 0%, #86efac 100%)'
-            : 'linear-gradient(135deg, #c4b5fd 0%, #f0abfc 50%, #fda4af 100%)',
-          color: 'white',
-        }}
-        aria-label={`Misi hari ini: ${todayMission.title}`}
-      >
-        <div className="text-6xl drop-shadow" aria-hidden>
-          {missionDoneToday ? '✨' : todayMission.emoji}
-        </div>
-        <div className="flex-1">
-          <div className="text-xs font-extrabold uppercase tracking-wide opacity-90">
-            {missionDoneToday ? 'Misi Selesai!' : 'Misi Hari Ini'}
-          </div>
-          <div className="font-display text-lg font-extrabold drop-shadow">
-            {todayMission.title}
-          </div>
-          {!missionDoneToday && (
-            <>
-              <div className="mt-1 text-xs font-bold opacity-95 line-clamp-2">
-                {todayMission.intro}
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/40">
-                  <motion.div
-                    className="h-full rounded-full bg-white"
-                    initial={false}
-                    animate={{ width: `${missionPct}%` }}
-                  />
-                </div>
-                <span className="text-xs font-extrabold">
-                  {missionDone}/{missionTarget}
-                </span>
-              </div>
-            </>
-          )}
-          {missionDoneToday && (
-            <div className="text-xs font-bold opacity-95">{todayMission.outro}</div>
-          )}
-        </div>
-        <div className="text-xl drop-shadow opacity-90" aria-hidden>
-          🔊
-        </div>
-      </motion.button>
 
       {/* Daily bonus */}
       <motion.button

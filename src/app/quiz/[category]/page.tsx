@@ -11,7 +11,6 @@ import { Mascot } from '@/components/Mascot';
 import { FloatingDeco } from '@/components/FloatingDeco';
 import { getCategoryMeta } from '@/data/categories';
 import { pickAdaptiveQuestions } from '@/data/questions';
-import { getTodayMission } from '@/data/missions';
 import type { QuizCategoryId, QuizQuestion } from '@/types';
 import { sfx, playAudioCue } from '@/lib/sfx';
 import { speak, speakCheer, speakEncouragement, stopSpeaking } from '@/lib/speech';
@@ -34,13 +33,9 @@ function Inner() {
   const wallet = useAppStore((s) => s.wallet);
   const recordAnswer = useAppStore((s) => s.recordAnswer);
   const finishQuizSession = useAppStore((s) => s.finishQuizSession);
-  const reportMissionAnswer = useAppStore((s) => s.reportMissionAnswer);
-  const missionProgress = useAppStore((s) => s.missionProgress);
   const byQuestion = useAppStore((s) => s.quizStats.byQuestion);
 
   const meta = getCategoryMeta(params.category);
-  const todayMission = useMemo(() => getTodayMission(new Date()), []);
-  const missionRelevant = !!meta && todayMission.category === meta.id;
 
   const [sessionKey, setSessionKey] = useState(0);
 
@@ -63,7 +58,6 @@ function Inner() {
   const [done, setDone] = useState(false);
   const [bonusGiven, setBonusGiven] = useState(false);
   const [confetti, setConfetti] = useState(false);
-  const [missionDone, setMissionDone] = useState(false);
 
   // For exit-on-unmount: stop any ongoing TTS so the next page is silent.
   useEffect(() => {
@@ -104,7 +98,6 @@ function Inner() {
     setDone(false);
     setBonusGiven(false);
     setConfetti(false);
-    setMissionDone(false);
     sfx.click();
   }, []);
 
@@ -139,14 +132,6 @@ function Inner() {
 
       // Flying coin from the click point to the badge.
       triggerFlyingCoin({ x: evt.clientX, y: evt.clientY }, COIN_CONSTANTS.COIN_PER_CORRECT);
-
-      // Mission progress: only count category-matched correct answers.
-      const r = reportMissionAnswer(meta!.id as QuizCategoryId, true);
-      if (r.completed) {
-        setMissionDone(true);
-        // Speak the outro ~1s after the cheer so they don't overlap.
-        setTimeout(() => speak(todayMission.outro, { pitch: 1.2, rate: 0.95 }), 1100);
-      }
     } else {
       sfx.wrong();
       setTimeout(() => speakEncouragement(), 350);
@@ -214,8 +199,6 @@ function Inner() {
 
   const progress = ((idx + (revealed ? 1 : 0)) / questions.length) * 100;
   const isCorrect = revealed && selected === q.correctOptionId;
-  const missionTotal = todayMission.target;
-  const missionDoneCount = Math.min(missionProgress?.correct ?? 0, missionTotal);
 
   return (
     <FocusShell
@@ -224,54 +207,6 @@ function Inner() {
       coins={wallet.coins}
     >
       <Confetti show={confetti} />
-
-      {/* Mission banner — shown when this category is today's mission */}
-      {missionRelevant && !(missionProgress?.rewarded) && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 rounded-3xl bg-gradient-to-r from-violet-100 to-pink-100 p-3 shadow-kid"
-        >
-          <span className="text-3xl drop-shadow" aria-hidden>
-            {todayMission.emoji}
-          </span>
-          <div className="flex-1">
-            <div className="font-display text-xs font-extrabold uppercase tracking-wide text-violet-700">
-              Misi Hari Ini
-            </div>
-            <div className="font-display text-base font-extrabold text-slate-800">
-              {todayMission.title}
-            </div>
-            <div className="mt-1 flex items-center gap-2">
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/80">
-                <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-violet-400 to-pink-400"
-                  initial={false}
-                  animate={{ width: `${(missionDoneCount / missionTotal) * 100}%` }}
-                />
-              </div>
-              <span className="text-xs font-extrabold text-violet-700">
-                {missionDoneCount}/{missionTotal}
-              </span>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {missionDone && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="rounded-3xl bg-gradient-to-r from-emerald-100 to-lime-100 p-3 text-center shadow-kid"
-        >
-          <div className="font-display text-base font-extrabold text-emerald-700">
-            🎉 Misi Selesai! +{todayMission.bonusCoins} 🪙
-          </div>
-          <div className="text-xs font-semibold text-emerald-800">
-            {todayMission.outro}
-          </div>
-        </motion.div>
-      )}
 
       {/* Progress */}
       <div className="flex items-center gap-3">

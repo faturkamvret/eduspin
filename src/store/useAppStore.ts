@@ -19,11 +19,6 @@ import type {
 } from '@/types';
 import { performPull } from '@/lib/gacha';
 import { getCollectibleById, getCollectiblesForGender } from '@/data/collectibles';
-import { getTodayMission } from '@/data/missions';
-
-function todayKey(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 const COIN_PER_CORRECT = 1;
 const COIN_BONUS_PER_SESSION = 5;
@@ -57,22 +52,6 @@ export function getShopPrice(item: Collectible): number | null {
 }
 
 export type SyncStatus = 'disabled' | 'connecting' | 'syncing' | 'synced' | 'offline' | 'error';
-
-/**
- * Daily mission progress tracker. We snapshot the mission id + day so a
- * mission that's already been completed today doesn't pay out twice, and
- * tomorrow's mission starts from zero.
- */
-export interface MissionProgress {
-  /** YYYY-MM-DD local date of the mission this row belongs to. */
-  date: string;
-  /** Mission id (from MISSIONS table) being tracked today. */
-  missionId: string;
-  /** Number of correct answers accumulated toward the target. */
-  correct: number;
-  /** Has the bonus already been paid? */
-  rewarded: boolean;
-}
 
 /**
  * Currently-rotating shop offers.
@@ -195,15 +174,6 @@ export interface AppState {
   markPlayed: () => void;
   /** Last time the child interacted with a quiz (epoch ms). Persisted. */
   lastPlayedAt: number | null;
-  /** Today's daily mission progress. Persisted. */
-  missionProgress: MissionProgress | null;
-  /**
-   * Increment today's mission counter when the answered question's category
-   * matches the mission. Returns reward info if the increment caused completion.
-   */
-  reportMissionAnswer: (categoryId: QuizCategoryId, correct: boolean) =>
-    | { completed: true; bonusCoins: number }
-    | { completed: false };
 }
 
 const emptyWallet = (): Wallet => ({
@@ -543,14 +513,6 @@ export const useAppStore = create<AppState>()(
 
       lastPlayedAt: null,
 
-      missionProgress: null,
-
-      reportMissionAnswer: (_categoryId, _correct) => {
-        // Stub implementation — mission system can be fleshed out later.
-        // For now, returns not-completed so callers don't break.
-        return { completed: false };
-      },
-
       completeStoryChapter: (storyId, chapterId, correctCount, totalChapters) => {
         const now = Date.now();
         const stories = get().stories;
@@ -616,7 +578,6 @@ export const useAppStore = create<AppState>()(
         shopOffers: state.shopOffers,
         stories: state.stories,
         lastPlayedAt: state.lastPlayedAt,
-        missionProgress: state.missionProgress,
       }),
       onRehydrateStorage: () => (state) => {
         // Mark hydrated after persist middleware finishes loading
