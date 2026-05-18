@@ -19,6 +19,11 @@ import type {
 } from '@/types';
 import { performPull } from '@/lib/gacha';
 import { getCollectibleById, getCollectiblesForGender } from '@/data/collectibles';
+import { getTodayMission } from '@/data/missions';
+
+function todayKey(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 const COIN_PER_CORRECT = 1;
 const COIN_BONUS_PER_SESSION = 5;
@@ -52,6 +57,22 @@ export function getShopPrice(item: Collectible): number | null {
 }
 
 export type SyncStatus = 'disabled' | 'connecting' | 'syncing' | 'synced' | 'offline' | 'error';
+
+/**
+ * Daily mission progress tracker. We snapshot the mission id + day so a
+ * mission that's already been completed today doesn't pay out twice, and
+ * tomorrow's mission starts from zero.
+ */
+export interface MissionProgress {
+  /** YYYY-MM-DD local date of the mission this row belongs to. */
+  date: string;
+  /** Mission id (from MISSIONS table) being tracked today. */
+  missionId: string;
+  /** Number of correct answers accumulated toward the target. */
+  correct: number;
+  /** Has the bonus already been paid? */
+  rewarded: boolean;
+}
 
 /**
  * Currently-rotating shop offers.
@@ -164,6 +185,25 @@ export interface AppState {
   };
 
   setMuted: (muted: boolean) => void;
+  /** Toggle the gentle BGM loop. Persisted via settings. */
+  setBgmEnabled: (enabled: boolean) => void;
+  /**
+   * Mark that the child has played today (any quiz answer counts). Used to
+   * drive the mascot mood on home: 'happy' when played today, 'sleepy' when
+   * not seen for >24h.
+   */
+  markPlayed: () => void;
+  /** Last time the child interacted with a quiz (epoch ms). Persisted. */
+  lastPlayedAt: number | null;
+  /** Today's daily mission progress. Persisted. */
+  missionProgress: MissionProgress | null;
+  /**
+   * Increment today's mission counter when the answered question's category
+   * matches the mission. Returns reward info if the increment caused completion.
+   */
+  reportMissionAnswer: (categoryId: QuizCategoryId, correct: boolean) =>
+    | { completed: true; bonusCoins: number }
+    | { completed: false };
 }
 
 const emptyWallet = (): Wallet => ({
@@ -215,7 +255,7 @@ export const useAppStore = create<AppState>()(
       pity: emptyPity(),
       collection: emptyCollection(),
       quizStats: emptyQuizStats(),
-      settings: { muted: false },
+      settings: { muted: false, bgmEnabled: false },
       shopOffers: null,
       stories: {},
 
@@ -281,7 +321,7 @@ export const useAppStore = create<AppState>()(
           pity: emptyPity(),
           collection: emptyCollection(),
           quizStats: emptyQuizStats(),
-          settings: { muted: false },
+          settings: { muted: false, bgmEnabled: false },
           shopOffers: null,
           stories: {},
         }),
@@ -320,6 +360,8 @@ export const useAppStore = create<AppState>()(
             byQuestion: nextByQuestion,
             updatedAt: now,
           },
+          // Touch the "played today" marker so the home mascot reflects activity.
+          lastPlayedAt: now,
           wallet: correct
             ? {
                 ...wallet,

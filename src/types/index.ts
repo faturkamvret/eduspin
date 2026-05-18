@@ -153,6 +153,11 @@ export interface QuizStats {
 
 export interface AppSettings {
   muted: boolean;
+  /**
+   * Whether the gentle background music loop plays. Default false — parents
+   * are very sensitive about apps making noise unsolicited.
+   */
+  bgmEnabled?: boolean;
 }
 
 export interface PullResult {

@@ -51,8 +51,7 @@ function Inner() {
         {QUIZ_CATEGORIES.map((cat, i) => {
           const count = pickAdaptiveQuestions(cat.id, profile.age, 999).length;
           const gradient =
-            CATEGORY_GRADIENTS[cat.id] ??
-            'linear-gradient(135deg, #c4b5fd, #a78bfa)';
+            CATEGORY_GRADIENTS[cat.id] ?? 'linear-gradient(135deg, #c4b5fd, #a78bfa)';
           return (
             <motion.button
               key={cat.id}
@@ -89,6 +88,39 @@ function Inner() {
           );
         })}
       </div>
+
+      {/* Drag & Drop matching mini-game card */}
+      <motion.button
+        type="button"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        whileTap={{ scale: 0.96 }}
+        whileHover={{ scale: 1.02 }}
+        onClick={() => {
+          sfx.click();
+          router.push('/quiz/match');
+        }}
+        className="menu-card overflow-hidden text-white"
+        style={{
+          background:
+            'linear-gradient(135deg, #c4b5fd 0%, #f0abfc 50%, #fda4af 100%)',
+        }}
+        aria-label="Main game cocokkan hewan dan suara"
+      >
+        <div className="text-6xl drop-shadow" aria-hidden>
+          🎮
+        </div>
+        <div className="flex-1 text-left">
+          <div className="font-display text-xl font-extrabold drop-shadow">
+            Game Cocokkan Hewan
+          </div>
+          <div className="text-xs font-bold opacity-95">
+            Tarik hewan ke kotak suaranya — seru!
+          </div>
+        </div>
+        <div className="text-2xl font-extrabold opacity-90">→</div>
+      </motion.button>
     </PageShell>
   );
 }
