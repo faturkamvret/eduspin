@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
 import { PageShell } from '@/components/PageShell';
+import { FeedbackDialog } from '@/components/FeedbackDialog';
 import { sfx, setMuted as setSfxMuted } from '@/lib/sfx';
 import { SyncBadge } from '@/components/SyncBadge';
 import type { Gender } from '@/types';
@@ -39,6 +40,7 @@ function Inner() {
 
   const [nickname, setNickname] = useState(profile?.nickname ?? '');
   const [confirmReset, setConfirmReset] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
@@ -228,6 +230,22 @@ function Inner() {
         <p className="text-xs font-bold text-slate-500">Squizzy · MVP v0.3 · 🇮🇩</p>
       </Section>
 
+      <Section title="📝 Kritik & Saran">
+        <p className="text-sm font-semibold text-slate-700">
+          Punya ide, saran, atau menemukan bug? Kirim langsung ke tim kami.
+        </p>
+        <button
+          type="button"
+          className="btn-primary w-full"
+          onClick={() => {
+            sfx.click();
+            setFeedbackOpen(true);
+          }}
+        >
+          ✏️ Tulis Kritik & Saran
+        </button>
+      </Section>
+
       <Section title="📜 Legal & Kebijakan">
         <p className="text-sm font-semibold text-slate-700">
           Bacalah ketentuan penggunaan dan kebijakan privasi kami sebelum melanjutkan.
@@ -293,6 +311,8 @@ function Inner() {
           </div>
         )}
       </Section>
+
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </PageShell>
   );
 }
