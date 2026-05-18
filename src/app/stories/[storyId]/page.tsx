@@ -5,9 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
-import { PageShell } from '@/components/PageShell';
 import { CoinBadge } from '@/components/CoinBadge';
 import { Mascot } from '@/components/Mascot';
+import { FloatingDeco } from '@/components/FloatingDeco';
 import { getStoryById } from '@/data/stories';
 import { sfx } from '@/lib/sfx';
 
@@ -35,7 +35,11 @@ function Inner() {
   if (!profile) return null;
   if (!story) {
     return (
-      <PageShell title="📖 Cerita">
+      <FocusShell
+        onExit={() => router.replace('/stories')}
+        title="📖 Cerita"
+        coins={wallet.coins}
+      >
         <div className="card flex flex-col items-center gap-3 text-center">
           <Mascot mood="thinking" bubble="Cerita tidak ditemukan" />
           <button
@@ -45,7 +49,7 @@ function Inner() {
             Kembali ke daftar
           </button>
         </div>
-      </PageShell>
+      </FocusShell>
     );
   }
 
@@ -56,9 +60,10 @@ function Inner() {
   const isFinished = completedCount >= totalChapters;
 
   return (
-    <PageShell
+    <FocusShell
+      onExit={() => router.push('/stories')}
       title={`${story.coverEmoji} ${story.title}`}
-      right={<CoinBadge coins={wallet.coins} />}
+      coins={wallet.coins}
     >
       {/* Hero */}
       <motion.section
@@ -143,6 +148,48 @@ function Inner() {
           🎉 Kamu sudah menyelesaikan seluruh cerita! Kerja bagus!
         </motion.div>
       )}
-    </PageShell>
+    </FocusShell>
+  );
+}
+
+/**
+ * FocusShell — story focus mode container (matches chapter play screens).
+ * Once a child enters a story, the entire "story session" stays in focus mode
+ * with only an ✕ to exit back to the story list.
+ */
+function FocusShell({
+  children,
+  onExit,
+  title,
+  coins,
+}: {
+  children: React.ReactNode;
+  onExit: () => void;
+  title: string;
+  coins: number;
+}) {
+  return (
+    <main className="relative flex flex-1 flex-col gap-5 px-4 py-4">
+      <FloatingDeco count={8} emojis={['⭐', '✨', '📖', '🌈']} />
+      <header className="flex items-center justify-between gap-2">
+        <CoinBadge coins={coins} />
+        <h1 className="font-display text-lg font-extrabold text-slate-800 drop-shadow truncate max-w-[50%]">
+          {title}
+        </h1>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.88 }}
+          onClick={() => {
+            sfx.click();
+            onExit();
+          }}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl font-extrabold text-slate-600 shadow-kid transition-all hover:bg-rose-50 hover:text-rose-500"
+          aria-label="Tutup"
+        >
+          ✕
+        </motion.button>
+      </header>
+      {children}
+    </main>
   );
 }
