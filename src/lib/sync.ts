@@ -41,6 +41,7 @@ function snapshotFromStore(): CloudSnapshot {
     collection: s.collection,
     quizStats: s.quizStats,
     settings: s.settings,
+    stories: s.stories,
   };
 }
 
@@ -61,7 +62,8 @@ function isEmptySnapshot(snap: CloudSnapshot): boolean {
     snap.wallet.totalEarned === 0 &&
     snap.pity.totalPulls === 0 &&
     Object.keys(snap.collection.items).length === 0 &&
-    snap.quizStats.totalAnswered === 0
+    snap.quizStats.totalAnswered === 0 &&
+    Object.keys(snap.stories ?? {}).length === 0
   );
 }
 
@@ -176,6 +178,7 @@ export async function startSync(): Promise<void> {
         collection: cloudData.collection ?? local.collection,
         quizStats: cloudData.quizStats ?? local.quizStats,
         settings: cloudData.settings ?? local.settings,
+        stories: cloudData.stories ?? local.stories ?? {},
       };
       const cloudUpdatedAt =
         cloudData._meta?.updatedAt ?? snapshotUpdatedAt(cloudSnap);
@@ -212,7 +215,8 @@ export async function startSync(): Promise<void> {
       state.pity !== prev.pity ||
       state.collection !== prev.collection ||
       state.quizStats !== prev.quizStats ||
-      state.settings !== prev.settings;
+      state.settings !== prev.settings ||
+      state.stories !== prev.stories;
     if (dataChanged) schedulePush();
   });
 
@@ -232,6 +236,7 @@ export async function startSync(): Promise<void> {
         collection: data.collection ?? local.collection,
         quizStats: data.quizStats ?? local.quizStats,
         settings: data.settings ?? local.settings,
+        stories: data.stories ?? local.stories ?? {},
       };
       const remoteJson = JSON.stringify(remoteSnap);
       // Skip our own writes — Firestore SDK still fires snapshot for them.

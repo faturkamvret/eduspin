@@ -14,6 +14,7 @@ import type {
   QuizQuestionStats,
   QuizStats,
   Rarity,
+  StoryProgress,
   Wallet,
 } from '@/types';
 import { performPull } from '@/lib/gacha';
@@ -27,6 +28,15 @@ const DAILY_BONUS_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const SHOP_ROTATION_MS = 24 * 60 * 60 * 1000;
 const SHOP_COMMON_SLOTS = 4;
 const SHOP_RARE_SLOTS = 4;
+
+/**
+ * Story-mode rewards.
+ * - per chapter: 1 coin per correct answer (same as quiz)
+ * - per chapter: small completion bonus
+ * - per story (one-time): big completion bonus + collection-style book entry
+ */
+const COIN_PER_CHAPTER_BONUS = 3;
+const COIN_PER_STORY_BONUS = 15;
 
 /**
  * Shop pricing per rarity.
@@ -75,6 +85,12 @@ export interface AppState {
   settings: AppSettings;
   /** Currently-rotating shop offers. Null until first call to getOrRotateShopOffers. */
   shopOffers: ShopOffers | null;
+  /**
+   * Per-story progress, keyed by story id.
+   * Tracks finished chapters + whether the one-time completion bonus has been
+   * claimed (prevents repeated payouts on replay).
+   */
+  stories: Record<string, StoryProgress>;
 
   // ─── actions ───
   setHydrated: () => void;
@@ -128,6 +144,25 @@ export interface AppState {
    */
   getOrRotateShopOffers: () => ShopOffers;
 
+  /**
+   * Mark a chapter complete and award coins for the answers.
+   * Returns the per-chapter bonus actually credited, plus a flag indicating
+   * whether THIS call also completed the entire story (so UI can fire a
+   * special celebration). The one-time story bonus is awarded only on the
+   * first completion (bonusClaimed=false → true).
+   */
+  completeStoryChapter: (
+    storyId: string,
+    chapterId: string,
+    correctCount: number,
+    /** Total chapters in this story — used to detect completion. */
+    totalChapters: number,
+  ) => {
+    chapterBonus: number;
+    storyJustCompleted: boolean;
+    storyBonus: number;
+  };
+
   setMuted: (muted: boolean) => void;
 }
 
@@ -164,6 +199,8 @@ export interface CloudSnapshot {
   collection: Collection;
   quizStats: QuizStats;
   settings: AppSettings;
+  /** Story progress is part of the cloud snapshot too. Optional for backwards compat. */
+  stories?: Record<string, StoryProgress>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -180,6 +217,7 @@ export const useAppStore = create<AppState>()(
       quizStats: emptyQuizStats(),
       settings: { muted: false },
       shopOffers: null,
+      stories: {},
 
       setHydrated: () => set({ hydrated: true }),
       setSyncStatus: (syncStatus) => set({ syncStatus }),
@@ -194,6 +232,7 @@ export const useAppStore = create<AppState>()(
           collection: snap.collection,
           quizStats: snap.quizStats,
           settings: snap.settings,
+          stories: snap.stories ?? {},
         });
       },
 
@@ -244,6 +283,7 @@ export const useAppStore = create<AppState>()(
           quizStats: emptyQuizStats(),
           settings: { muted: false },
           shopOffers: null,
+          stories: {},
         }),
 
       recordAnswer: (categoryId, correct, questionId) => {
@@ -454,6 +494,56 @@ export const useAppStore = create<AppState>()(
       },
 
       setMuted: (muted) => set({ settings: { ...get().settings, muted } }),
+
+      completeStoryChapter: (storyId, chapterId, correctCount, totalChapters) => {
+        const now = Date.now();
+        const stories = get().stories;
+        const prior = stories[storyId] ?? {
+          completedChapters: [],
+          bonusClaimed: false,
+          updatedAt: now,
+        };
+
+        // Idempotent chapter add.
+        const completedChapters = prior.completedChapters.includes(chapterId)
+          ? prior.completedChapters
+          : [...prior.completedChapters, chapterId];
+
+        // Per-chapter rewards: 1 coin per correct answer + flat chapter bonus.
+        // We award these on EVERY play (kid can re-do a chapter and still get
+        // the per-answer coins) — only the big story-completion bonus is gated.
+        const answerCoins = Math.max(0, correctCount) * COIN_PER_CORRECT;
+        const chapterBonus = COIN_PER_CHAPTER_BONUS;
+
+        const isStoryComplete = completedChapters.length >= totalChapters;
+        const storyJustCompleted = isStoryComplete && !prior.bonusClaimed;
+        const storyBonus = storyJustCompleted ? COIN_PER_STORY_BONUS : 0;
+
+        const totalCoins = answerCoins + chapterBonus + storyBonus;
+        const wallet = get().wallet;
+
+        set({
+          stories: {
+            ...stories,
+            [storyId]: {
+              completedChapters,
+              bonusClaimed: prior.bonusClaimed || storyJustCompleted,
+              updatedAt: now,
+            },
+          },
+          wallet:
+            totalCoins > 0
+              ? {
+                  ...wallet,
+                  coins: wallet.coins + totalCoins,
+                  totalEarned: wallet.totalEarned + totalCoins,
+                  updatedAt: now,
+                }
+              : wallet,
+        });
+
+        return { chapterBonus, storyJustCompleted, storyBonus };
+      },
     }),
     {
       name: 'eduspin-store-v1',
@@ -468,6 +558,7 @@ export const useAppStore = create<AppState>()(
         quizStats: state.quizStats,
         settings: state.settings,
         shopOffers: state.shopOffers,
+        stories: state.stories,
       }),
       onRehydrateStorage: () => (state) => {
         // Mark hydrated after persist middleware finishes loading
@@ -482,5 +573,7 @@ export const COIN_CONSTANTS = {
   COIN_BONUS_PER_SESSION,
   COIN_DAILY_BONUS,
   COIN_PER_PULL,
+  COIN_PER_CHAPTER_BONUS,
+  COIN_PER_STORY_BONUS,
   DAILY_BONUS_INTERVAL_MS,
 };
