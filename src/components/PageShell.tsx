@@ -13,6 +13,12 @@ interface Props {
   right?: ReactNode;
   /** Show floating deco bg. Default true. */
   deco?: boolean;
+  /**
+   * Optional explicit back destination. When provided, the back button
+   * navigates to this path instead of `router.back()`. Use this to break
+   * navigation loops (e.g., when a child page redirects to itself).
+   */
+  backHref?: string;
 }
 
 export function PageShell({
@@ -21,6 +27,7 @@ export function PageShell({
   showBack = true,
   right,
   deco = true,
+  backHref,
 }: Props) {
   const router = useRouter();
   return (
@@ -33,7 +40,11 @@ export function PageShell({
             whileTap={{ scale: 0.92 }}
             onClick={() => {
               sfx.click();
-              router.back();
+              if (backHref) {
+                router.push(backHref);
+              } else {
+                router.back();
+              }
             }}
             className="rounded-full bg-white px-4 py-2 font-display text-sm font-bold shadow-kid transition-all hover:bg-slate-50"
             aria-label="Kembali"

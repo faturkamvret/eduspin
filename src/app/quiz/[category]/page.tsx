@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
@@ -11,8 +11,11 @@ import { Mascot } from '@/components/Mascot';
 import { FloatingDeco } from '@/components/FloatingDeco';
 import { getCategoryMeta } from '@/data/categories';
 import { pickAdaptiveQuestions } from '@/data/questions';
+import { getTodayMission } from '@/data/missions';
 import type { QuizCategoryId, QuizQuestion } from '@/types';
 import { sfx, playAudioCue } from '@/lib/sfx';
+import { speak, speakCheer, speakEncouragement, stopSpeaking } from '@/lib/speech';
+import { triggerFlyingCoin } from '@/components/FlyingCoin';
 
 const SESSION_LENGTH = 10;
 
@@ -31,9 +34,14 @@ function Inner() {
   const wallet = useAppStore((s) => s.wallet);
   const recordAnswer = useAppStore((s) => s.recordAnswer);
   const finishQuizSession = useAppStore((s) => s.finishQuizSession);
+  const reportMissionAnswer = useAppStore((s) => s.reportMissionAnswer);
+  const missionProgress = useAppStore((s) => s.missionProgress);
   const byQuestion = useAppStore((s) => s.quizStats.byQuestion);
 
   const meta = getCategoryMeta(params.category);
+  const todayMission = useMemo(() => getTodayMission(new Date()), []);
+  const missionRelevant = !!meta && todayMission.category === meta.id;
+
   const [sessionKey, setSessionKey] = useState(0);
 
   const questions = useMemo<QuizQuestion[]>(() => {
@@ -45,9 +53,6 @@ function Inner() {
       1,
       byQuestion,
     );
-    // sessionKey forces a fresh pick on retry. byQuestion intentionally
-    // excluded from deps so the picked set is stable for the whole session
-    // (otherwise it'd reshuffle after every answer recorded).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, meta, sessionKey]);
 
@@ -58,18 +63,36 @@ function Inner() {
   const [done, setDone] = useState(false);
   const [bonusGiven, setBonusGiven] = useState(false);
   const [confetti, setConfetti] = useState(false);
+  const [missionDone, setMissionDone] = useState(false);
+
+  // For exit-on-unmount: stop any ongoing TTS so the next page is silent.
+  useEffect(() => {
+    return () => stopSpeaking();
+  }, []);
 
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
 
-  // Auto-play the audio cue when an audio question appears.
+  // TTS narration: read each new question prompt aloud.
+  // For audio-cue questions, speak prompt first then play the SFX a beat later.
   const currentQuestion = questions[idx];
+  const lastReadIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!currentQuestion?.audioCue) return;
-    // small delay so the question card transition completes first.
-    const id = setTimeout(() => playAudioCue(currentQuestion.audioCue!), 300);
-    return () => clearTimeout(id);
+    if (!currentQuestion) return;
+    if (lastReadIdRef.current === currentQuestion.id) return;
+    lastReadIdRef.current = currentQuestion.id;
+
+    // Brief delay so transition finishes before TTS starts.
+    const t = setTimeout(() => {
+      speak(currentQuestion.prompt, { rate: 0.92, pitch: 1.15 });
+      if (currentQuestion.audioCue) {
+        // Wait approx until the prompt is done (~1.4s for typical short prompt),
+        // then play the animal/object sound.
+        setTimeout(() => playAudioCue(currentQuestion.audioCue!), 1500);
+      }
+    }, 200);
+    return () => clearTimeout(t);
   }, [currentQuestion]);
 
   const startNewSession = useCallback(() => {
@@ -81,6 +104,7 @@ function Inner() {
     setDone(false);
     setBonusGiven(false);
     setConfetti(false);
+    setMissionDone(false);
     sfx.click();
   }, []);
 
@@ -100,7 +124,7 @@ function Inner() {
 
   const q = questions[idx]!;
 
-  function onPick(optionId: string) {
+  function onPick(optionId: string, evt: React.MouseEvent) {
     if (revealed) return;
     setSelected(optionId);
     setRevealed(true);
@@ -108,10 +132,24 @@ function Inner() {
     if (correct) {
       setCorrectCount((c) => c + 1);
       sfx.correct();
+      // Small delay then verbal cheer so the cheer doesn't cut off the SFX.
+      setTimeout(() => speakCheer(), 350);
       setConfetti(true);
       setTimeout(() => setConfetti(false), 1500);
+
+      // Flying coin from the click point to the badge.
+      triggerFlyingCoin({ x: evt.clientX, y: evt.clientY }, COIN_CONSTANTS.COIN_PER_CORRECT);
+
+      // Mission progress: only count category-matched correct answers.
+      const r = reportMissionAnswer(meta!.id as QuizCategoryId, true);
+      if (r.completed) {
+        setMissionDone(true);
+        // Speak the outro ~1s after the cheer so they don't overlap.
+        setTimeout(() => speak(todayMission.outro, { pitch: 1.2, rate: 0.95 }), 1100);
+      }
     } else {
       sfx.wrong();
+      setTimeout(() => speakEncouragement(), 350);
     }
     recordAnswer(meta!.id as QuizCategoryId, correct, q.id);
   }
@@ -176,6 +214,8 @@ function Inner() {
 
   const progress = ((idx + (revealed ? 1 : 0)) / questions.length) * 100;
   const isCorrect = revealed && selected === q.correctOptionId;
+  const missionTotal = todayMission.target;
+  const missionDoneCount = Math.min(missionProgress?.correct ?? 0, missionTotal);
 
   return (
     <FocusShell
@@ -184,6 +224,54 @@ function Inner() {
       coins={wallet.coins}
     >
       <Confetti show={confetti} />
+
+      {/* Mission banner — shown when this category is today's mission */}
+      {missionRelevant && !(missionProgress?.rewarded) && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 rounded-3xl bg-gradient-to-r from-violet-100 to-pink-100 p-3 shadow-kid"
+        >
+          <span className="text-3xl drop-shadow" aria-hidden>
+            {todayMission.emoji}
+          </span>
+          <div className="flex-1">
+            <div className="font-display text-xs font-extrabold uppercase tracking-wide text-violet-700">
+              Misi Hari Ini
+            </div>
+            <div className="font-display text-base font-extrabold text-slate-800">
+              {todayMission.title}
+            </div>
+            <div className="mt-1 flex items-center gap-2">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/80">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-violet-400 to-pink-400"
+                  initial={false}
+                  animate={{ width: `${(missionDoneCount / missionTotal) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs font-extrabold text-violet-700">
+                {missionDoneCount}/{missionTotal}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {missionDone && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-3xl bg-gradient-to-r from-emerald-100 to-lime-100 p-3 text-center shadow-kid"
+        >
+          <div className="font-display text-base font-extrabold text-emerald-700">
+            🎉 Misi Selesai! +{todayMission.bonusCoins} 🪙
+          </div>
+          <div className="text-xs font-semibold text-emerald-800">
+            {todayMission.outro}
+          </div>
+        </motion.div>
+      )}
 
       {/* Progress */}
       <div className="flex items-center gap-3">
@@ -210,7 +298,7 @@ function Inner() {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: -32, scale: 0.95 }}
           transition={{ type: 'spring', damping: 18 }}
-          className="card flex flex-col items-center gap-5 text-center"
+          className="card relative flex flex-col items-center gap-5 text-center"
         >
           {q.visual && (
             <motion.div
@@ -223,29 +311,32 @@ function Inner() {
             </motion.div>
           )}
 
-          {/* Audio-cue button — large + obvious for kids */}
-          {q.audioCue && (
-            <motion.button
-              type="button"
-              onClick={() => playAudioCue(q.audioCue!)}
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.06 }}
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ repeat: Infinity, duration: 1.6 }}
-              className="flex h-24 w-24 items-center justify-center rounded-full text-5xl shadow-kid-violet ring-4 ring-white"
-              style={{
-                background: 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #8b5cf6 100%)',
-                color: 'white',
-              }}
-              aria-label="Putar suara"
-            >
-              🔊
-            </motion.button>
+          {/* Audio-cue button + question text — side by side layout */}
+          {q.audioCue ? (
+            <div className="flex w-full items-center gap-4">
+              <h2 className="flex-1 font-display text-2xl font-extrabold leading-tight text-slate-800 text-left">
+                {q.prompt}
+              </h2>
+              <motion.button
+                type="button"
+                onClick={() => playAudioCue(q.audioCue!)}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.06 }}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl shadow-kid-violet ring-2 ring-white"
+                style={{
+                  background: 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #8b5cf6 100%)',
+                  color: 'white',
+                }}
+                aria-label="Putar suara"
+              >
+                🔊
+              </motion.button>
+            </div>
+          ) : (
+            <h2 className="font-display text-2xl font-extrabold leading-tight text-slate-800">
+              {q.prompt}
+            </h2>
           )}
-
-          <h2 className="font-display text-2xl font-extrabold leading-tight text-slate-800">
-            {q.prompt}
-          </h2>
 
           <div className="grid w-full grid-cols-1 gap-4 mt-2">
             {q.options.map((opt) => {
@@ -262,15 +353,13 @@ function Inner() {
                 <motion.button
                   key={opt.id}
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
                     if (revealed) return;
                     sfx.pop();
-                    onPick(opt.id);
+                    onPick(opt.id, e);
                   }}
                   disabled={revealed}
-                  whileTap={
-                    !revealed ? { scale: 0.93, rotate: -1 } : undefined
-                  }
+                  whileTap={!revealed ? { scale: 0.93, rotate: -1 } : undefined}
                   whileHover={!revealed ? { scale: 1.02 } : undefined}
                   animate={
                     revealed && isRight
@@ -352,6 +441,7 @@ function FocusShell({
           whileTap={{ scale: 0.92 }}
           onClick={() => {
             sfx.click();
+            stopSpeaking();
             onExit();
           }}
           className="rounded-full bg-white px-4 py-2 font-display text-sm font-bold shadow-kid transition-all hover:bg-slate-50"

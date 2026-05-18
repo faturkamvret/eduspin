@@ -153,6 +153,11 @@ export interface QuizStats {
 
 export interface AppSettings {
   muted: boolean;
+  /**
+   * Whether the gentle background music loop plays. Default false — parents
+   * are very sensitive about apps making noise unsolicited.
+   */
+  bgmEnabled?: boolean;
 }
 
 export interface PullResult {
@@ -161,4 +166,71 @@ export interface PullResult {
   /** Was this pull boosted by pity? */
   pityTriggered: 'epic' | 'legendary' | null;
   pullNumber: number;
+}
+
+// ─────── Story-quiz domain ───────
+
+/**
+ * A single question inside a chapter. Mirrors QuizQuestion but without
+ * category/age fields — soal cerita selalu fixed dan terkait konteks bab,
+ * jadi tidak perlu adaptive picking.
+ */
+export interface ChapterQuestion {
+  id: string;
+  prompt: string;
+  /** Optional emoji/visual rendered with prompt */
+  visual?: string;
+  /** Optional auto-played sound (re-uses the AudioCue list from QuizQuestion). */
+  audioCue?: QuizQuestion['audioCue'];
+  options: QuizOption[];
+  correctOptionId: string;
+}
+
+/**
+ * One chapter of a story. Has narration text + 2-3 fixed questions.
+ */
+export interface StoryChapter {
+  id: string;
+  title: string;
+  /** Big emoji used as illustration on the narration screen. */
+  illustration: string;
+  /**
+   * Narration paragraphs (Indonesian). Each entry is one paragraph; UI joins
+   * them with spacing. Kept as array so TTS can read them sequentially.
+   */
+  narration: string[];
+  questions: ChapterQuestion[];
+}
+
+/**
+ * A full story with multiple chapters.
+ */
+export interface Story {
+  id: string;
+  title: string;
+  /** Short tagline shown on listing card. */
+  tagline: string;
+  /** Big emoji shown as cover. */
+  coverEmoji: string;
+  /** Recommended age range. */
+  ageMin: number;
+  ageMax: number;
+  /** CSS gradient string for cover card background. */
+  themeGradient: string;
+  chapters: StoryChapter[];
+}
+
+/**
+ * Per-story progress kept in the store. Tracks which chapters the child has
+ * finished + whether the story-completion bonus has been awarded.
+ */
+export interface StoryProgress {
+  /** Chapter ids the child has completed at least once. */
+  completedChapters: string[];
+  /**
+   * Whether the one-time story-completion bonus has been claimed.
+   * Prevents repeated payouts on replay.
+   */
+  bonusClaimed: boolean;
+  updatedAt: number;
 }

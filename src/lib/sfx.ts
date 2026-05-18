@@ -167,27 +167,33 @@ export const sfx = {
   },
 
   // ─────── Animal voices ───────
+  /** Dog bark — two sharp high-pitched yelps (distinct from moo/lion). */
   bark(): void {
     if (mutedRef) return;
     const c = getCtx();
     if (!c) return;
     const t = c.currentTime;
-    tone(c, t, { freq: 240, durationMs: 90, type: 'sawtooth', gain: 0.18 });
-    tone(c, t + 0.12, { freq: 200, durationMs: 90, type: 'sawtooth', gain: 0.18 });
+    // Higher pitch + shorter duration = clearly "yappy"
+    glide(c, t, 480, 320, 100, 'sawtooth', 0.2);
+    glide(c, t + 0.15, 500, 340, 100, 'sawtooth', 0.2);
   },
+  /** Cat meow — descending triangle glide, longer and smoother. */
   meow(): void {
     if (mutedRef) return;
     const c = getCtx();
     if (!c) return;
-    glide(c, c.currentTime, 700, 450, 380, 'triangle', 0.16);
+    const t = c.currentTime;
+    glide(c, t, 800, 450, 450, 'triangle', 0.16);
   },
+  /** Bird chirp — two very high quick pips. */
   chirp(): void {
     if (mutedRef) return;
     const c = getCtx();
     if (!c) return;
     const t = c.currentTime;
-    tone(c, t, { freq: 2000, durationMs: 60, type: 'sine', gain: 0.08 });
-    tone(c, t + 0.07, { freq: 2400, durationMs: 60, type: 'sine', gain: 0.08 });
+    tone(c, t, { freq: 2200, durationMs: 50, type: 'sine', gain: 0.1 });
+    tone(c, t + 0.06, { freq: 2800, durationMs: 50, type: 'sine', gain: 0.1 });
+    tone(c, t + 0.14, { freq: 2400, durationMs: 50, type: 'sine', gain: 0.08 });
   },
   /** Bear growl — low sawtooth glide + vibrato. */
   bearGrowl(): void {
@@ -220,46 +226,74 @@ export const sfx = {
     osc.stop(t + dur + 0.05);
     vibrato.stop(t + dur + 0.05);
   },
-  /** Lion roar — beefier than bear. */
+  /** Lion roar — long, deep, and rumbling (very different from bark). */
   lionRoar(): void {
     if (mutedRef) return;
     const c = getCtx();
     if (!c) return;
     const t = c.currentTime;
-    glide(c, t, 220, 90, 800, 'sawtooth', 0.22, 600);
-    glide(c, t + 0.05, 110, 60, 800, 'sawtooth', 0.18, 400);
+    // Very low + long duration + double layer = unmistakably "big cat"
+    glide(c, t, 160, 60, 1000, 'sawtooth', 0.22, 400);
+    glide(c, t + 0.08, 80, 40, 1000, 'sawtooth', 0.16, 300);
   },
-  /** Cow moo. */
+  /** Cow moo — sustained mid-low tone with slow wobble (no attack). */
   moo(): void {
     if (mutedRef) return;
     const c = getCtx();
     if (!c) return;
-    glide(c, c.currentTime, 180, 110, 600, 'sawtooth', 0.18, 700);
+    const t = c.currentTime;
+    // Longer, smoother, higher than lion — "mooooo" feel
+    const osc = c.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.linearRampToValueAtTime(180, t + 0.8);
+    const lfo = c.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(4, t);
+    const lfoG = c.createGain();
+    lfoG.gain.setValueAtTime(8, t);
+    lfo.connect(lfoG).connect(osc.frequency);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.1);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.6);
+    g.gain.linearRampToValueAtTime(0, t + 0.9);
+    osc.connect(g).connect(c.destination);
+    osc.start(t);
+    lfo.start(t);
+    osc.stop(t + 0.95);
+    lfo.stop(t + 0.95);
   },
-  /** Duck quack — noise burst + low square. */
+  /** Duck quack — nasal, mid-high, very short double honk. */
   quack(): void {
     if (mutedRef) return;
     const c = getCtx();
     if (!c) return;
     const t = c.currentTime;
-    glide(c, t, 350, 280, 120, 'square', 0.14);
-    glide(c, t + 0.13, 350, 250, 120, 'square', 0.14);
+    // Nasal "honk" = square wave at mid freq, extremely short
+    tone(c, t, { freq: 600, durationMs: 70, type: 'square', gain: 0.15 });
+    tone(c, t + 0.1, { freq: 550, durationMs: 70, type: 'square', gain: 0.15 });
   },
-  /** Frog ribbit — two short low pulses. */
+  /** Frog ribbit — distinctive deep "boing" with upward pitch. */
   ribbit(): void {
     if (mutedRef) return;
     const c = getCtx();
     if (!c) return;
     const t = c.currentTime;
-    tone(c, t, { freq: 180, durationMs: 100, type: 'square', gain: 0.18 });
-    tone(c, t + 0.13, { freq: 220, durationMs: 140, type: 'square', gain: 0.18 });
+    // Rising pitch "boing" — very different from quack's honk
+    glide(c, t, 120, 350, 150, 'square', 0.18);
+    glide(c, t + 0.2, 130, 380, 150, 'square', 0.18);
   },
-  /** Elephant trumpet. */
+  /** Elephant trumpet — loud ascending blast, very distinctive. */
   elephant(): void {
     if (mutedRef) return;
     const c = getCtx();
     if (!c) return;
-    glide(c, c.currentTime, 300, 700, 500, 'sawtooth', 0.16, 1200);
+    const t = c.currentTime;
+    // Ascending trumpet = unique (only sound that goes UP dramatically)
+    glide(c, t, 200, 900, 600, 'sawtooth', 0.2, 1400);
+    // Add a second harmonic for richness
+    glide(c, t + 0.05, 400, 1200, 500, 'triangle', 0.08);
   },
   /** Horse neigh — quick descending triangle. */
   neigh(): void {
@@ -279,7 +313,7 @@ export const sfx = {
     glide(c, t, 200, 80, 1200, 'sine', 0.18, 500);
     glide(c, t + 0.4, 130, 200, 800, 'sine', 0.12, 500);
   },
-  /** Bee buzz. */
+  /** Bee buzz — continuous vibrating hum, clearly "insect". */
   buzz(): void {
     if (mutedRef) return;
     const c = getCtx();
@@ -287,22 +321,28 @@ export const sfx = {
     const t = c.currentTime;
     const osc = c.createOscillator();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.setValueAtTime(180, t);
+    // Fast LFO = buzzing vibration
     const lfo = c.createOscillator();
     lfo.type = 'sine';
-    lfo.frequency.setValueAtTime(30, t);
+    lfo.frequency.setValueAtTime(45, t); // faster than cow's 4Hz wobble
     const lfoGain = c.createGain();
-    lfoGain.gain.setValueAtTime(40, t);
+    lfoGain.gain.setValueAtTime(60, t); // wider modulation
     lfo.connect(lfoGain).connect(osc.frequency);
+    const filter = c.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(300, t);
+    filter.Q.setValueAtTime(3, t);
     const g = c.createGain();
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.1, t + 0.05);
-    g.gain.linearRampToValueAtTime(0, t + 0.5);
-    osc.connect(g).connect(c.destination);
+    g.gain.linearRampToValueAtTime(0.12, t + 0.04);
+    g.gain.linearRampToValueAtTime(0.12, t + 0.45);
+    g.gain.linearRampToValueAtTime(0, t + 0.55);
+    osc.connect(filter).connect(g).connect(c.destination);
     osc.start(t);
     lfo.start(t);
-    osc.stop(t + 0.55);
-    lfo.stop(t + 0.55);
+    osc.stop(t + 0.6);
+    lfo.stop(t + 0.6);
   },
 
   // ─────── Fantasy creatures ───────
@@ -555,6 +595,10 @@ export function playCollectibleSfx(collectibleId: string, category?: string): vo
  * Map a quiz audio cue keyword to an SFX.
  * Used by questions that have an `audioCue` field — auto-played when the
  * question appears so the child can hear "what does a dog say?" etc.
+ *
+ * For animal cues we now play REAL recorded sounds (CC0 / public domain OGG
+ * files stored in /public/sounds/animals/). Fantasy/synthetic cues still use
+ * the Web Audio synthesizer as a fallback.
  */
 export type AudioCue =
   | 'bark'
@@ -574,25 +618,85 @@ export type AudioCue =
   | 'sparkle'
   | 'bearGrowl';
 
+/**
+ * Mapping from AudioCue → real audio file path (relative to /public).
+ * Cues without a file entry will fallback to synthesized SFX.
+ */
+const REAL_AUDIO_FILES: Partial<Record<AudioCue, string>> = {
+  bark: '/sounds/animals/dog-bark.ogg',
+  meow: '/sounds/animals/cat-meow.ogg',
+  moo: '/sounds/animals/cow-moo.ogg',
+  quack: '/sounds/animals/duck-quack.ogg',
+  ribbit: '/sounds/animals/frog-croak.ogg',
+  chirp: '/sounds/animals/bird-chirp.ogg',
+  lionRoar: '/sounds/animals/lion-roar.ogg',
+  elephant: '/sounds/animals/elephant-trumpet.ogg',
+  neigh: '/sounds/animals/horse-neigh.ogg',
+  buzz: '/sounds/animals/bee-buzz.ogg',
+  whaleSong: '/sounds/animals/whale-song.ogg',
+  bearGrowl: '/sounds/animals/bear-growl.ogg',
+};
+
+/** Cache of HTMLAudioElement instances so we don't create new ones every play. */
+const audioCache: Partial<Record<AudioCue, HTMLAudioElement>> = {};
+
+/**
+ * Play a real recorded audio file. Returns true if playback started
+ * successfully, false otherwise (so the caller can fallback to synth).
+ */
+function playRealAudio(cue: AudioCue): boolean {
+  if (typeof window === 'undefined') return false;
+  const src = REAL_AUDIO_FILES[cue];
+  if (!src) return false;
+
+  try {
+    let audio = audioCache[cue];
+    if (!audio) {
+      audio = new Audio(src);
+      audio.preload = 'auto';
+      audioCache[cue] = audio;
+    }
+    // Reset to beginning if already playing
+    audio.currentTime = 0;
+    audio.volume = 0.8;
+    audio.play().catch(() => {
+      // Autoplay blocked — silently ignore; user will tap the 🔊 button again
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Synthesizer fallback map for cues without real audio files. */
+const SYNTH_FALLBACK: Record<AudioCue, () => void> = {
+  bark: sfx.bark,
+  meow: sfx.meow,
+  moo: sfx.moo,
+  quack: sfx.quack,
+  ribbit: sfx.ribbit,
+  chirp: sfx.chirp,
+  lionRoar: sfx.lionRoar,
+  elephant: sfx.elephant,
+  neigh: sfx.neigh,
+  buzz: sfx.buzz,
+  whaleSong: sfx.whaleSong,
+  dinoRoar: sfx.dinoRoar,
+  dragonRoar: sfx.dragonRoar,
+  phoenixCry: sfx.phoenixCry,
+  sparkle: sfx.sparkle,
+  bearGrowl: sfx.bearGrowl,
+};
+
+/**
+ * Play an audio cue — tries real recorded sound first, falls back to
+ * synthesized SFX if no file is available or playback fails.
+ */
 export function playAudioCue(cue: AudioCue): void {
   if (mutedRef) return;
-  const map: Record<AudioCue, () => void> = {
-    bark: sfx.bark,
-    meow: sfx.meow,
-    moo: sfx.moo,
-    quack: sfx.quack,
-    ribbit: sfx.ribbit,
-    chirp: sfx.chirp,
-    lionRoar: sfx.lionRoar,
-    elephant: sfx.elephant,
-    neigh: sfx.neigh,
-    buzz: sfx.buzz,
-    whaleSong: sfx.whaleSong,
-    dinoRoar: sfx.dinoRoar,
-    dragonRoar: sfx.dragonRoar,
-    phoenixCry: sfx.phoenixCry,
-    sparkle: sfx.sparkle,
-    bearGrowl: sfx.bearGrowl,
-  };
-  map[cue]?.();
+  // Try real audio first
+  const played = playRealAudio(cue);
+  if (played) return;
+  // Fallback to synthesized version
+  SYNTH_FALLBACK[cue]?.();
 }
