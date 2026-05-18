@@ -38,7 +38,7 @@ function Inner() {
         🎡
       </motion.div>
       <h1 className="font-display text-5xl font-extrabold text-rainbow drop-shadow">
-        EduSpin
+        Squizzy
       </h1>
       <p className="font-display text-base font-bold text-slate-600">
         Memuat petualanganmu... ✨

@@ -1,7 +1,7 @@
 import type { Story } from '@/types';
 
 /**
- * Saling Menolong di Sekolah — original story for EduSpin.
+ * Saling Menolong di Sekolah — original story for Squizzy.
  * Theme: empati, tolong-menolong, persahabatan, mengatasi kesulitan bersama.
  * Age 3-6. Mengajarkan anak bahwa membantu teman membuat semua orang bahagia.
  */

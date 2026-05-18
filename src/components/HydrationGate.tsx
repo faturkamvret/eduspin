@@ -38,7 +38,7 @@ export function HydrationGate({ children }: { children: ReactNode }) {
   if (!hydrated) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <div className="font-display text-2xl text-slate-500">EduSpin</div>
+        <div className="font-display text-2xl text-slate-500">Squizzy</div>
       </div>
     );
   }

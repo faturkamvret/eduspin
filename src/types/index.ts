@@ -1,4 +1,4 @@
-// Shared domain types for EduSpin
+// Shared domain types for Squizzy
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 

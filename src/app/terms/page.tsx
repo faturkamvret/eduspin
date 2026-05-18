@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { PageShell } from '@/components/PageShell';
 
 export const metadata: Metadata = {
-  title: 'Perjanjian Pengguna · EduSpin',
+  title: 'Perjanjian Pengguna · Squizzy',
   description:
-    'Perjanjian pengguna (syarat & ketentuan) penggunaan aplikasi EduSpin.',
+    'Perjanjian pengguna (syarat & ketentuan) penggunaan aplikasi Squizzy.',
 };
 
 const LAST_UPDATED = '18 Mei 2026';
@@ -18,7 +18,7 @@ export default function TermsPage() {
         </p>
 
         <p>
-          Dengan menggunakan aplikasi <strong>EduSpin</strong> (&ldquo;Aplikasi&rdquo;),
+          Dengan menggunakan aplikasi <strong>Squizzy</strong> (&ldquo;Aplikasi&rdquo;),
           Anda dan/atau orang tua/wali Anda menyetujui syarat dan ketentuan
           berikut. Mohon baca dengan saksama. Jika Anda tidak menyetujui,
           mohon untuk tidak menggunakan Aplikasi.
@@ -132,7 +132,7 @@ export default function TermsPage() {
 
         <Section title="11. Batasan Tanggung Jawab">
           <p>
-            Sepanjang diizinkan oleh hukum, EduSpin tidak bertanggung jawab
+            Sepanjang diizinkan oleh hukum, Squizzy tidak bertanggung jawab
             atas kerugian tidak langsung, insidental, atau konsekuensial yang
             timbul dari penggunaan Aplikasi.
           </p>
@@ -156,7 +156,7 @@ export default function TermsPage() {
         <Section title="14. Kontak">
           <p>
             Untuk pertanyaan terkait perjanjian ini, silakan hubungi kami
-            melalui kanal dukungan resmi EduSpin.
+            melalui kanal dukungan resmi Squizzy.
           </p>
         </Section>
       </article>

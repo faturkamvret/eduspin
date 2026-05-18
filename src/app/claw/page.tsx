@@ -196,7 +196,7 @@ function Inner() {
 
         {/* Machine base */}
         <div className="mt-2 rounded-2xl bg-rose-400 p-3 text-center text-white shadow-inner">
-          <div className="font-display text-sm font-bold">EDUSPIN CLAW</div>
+          <div className="font-display text-sm font-bold">SQUIZZY CLAW</div>
         </div>
       </div>
 

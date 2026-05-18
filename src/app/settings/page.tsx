@@ -220,11 +220,12 @@ function Inner() {
 
       <Section title="ℹ️ Tentang Aplikasi">
         <p className="text-sm font-semibold text-slate-700">
-          EduSpin dibuat untuk membantu anak belajar lewat permainan koleksi yang
-          menyenangkan. Tidak ada iklan, tidak ada pembelian uang asli, tidak ada
-          pengumpulan data pribadi anak. 💖
+          Squizzy dibuat untuk membantu anak belajar lewat permainan koleksi yang
+          menyenangkan dan interaktif seperti boneka squishy. Tidak ada iklan,
+          tidak ada pembelian uang asli, tidak ada pengumpulan data pribadi
+          anak. 💖
         </p>
-        <p className="text-xs font-bold text-slate-500">EduSpin · MVP v0.2 · 🇮🇩</p>
+        <p className="text-xs font-bold text-slate-500">Squizzy · MVP v0.3 · 🇮🇩</p>
       </Section>
 
       <Section title="📜 Legal & Kebijakan">

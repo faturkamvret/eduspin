@@ -3,9 +3,9 @@ import './globals.css';
 import { AppProviders } from '@/components/AppProviders';
 
 export const metadata: Metadata = {
-  title: 'EduSpin — Belajar Sambil Bermain',
+  title: 'Squizzy — Belajar Sambil Bermain',
   description:
-    'Aplikasi edukasi anak: jawab kuis, kumpulkan koin, dan mainkan claw machine untuk mengoleksi karakter lucu!',
+    'Squizzy adalah aplikasi edukasi anak yang interaktif seperti boneka squishy: jawab kuis, kumpulkan koin, dan mainkan claw machine untuk mengoleksi karakter lucu!',
 };
 
 export const viewport: Viewport = {

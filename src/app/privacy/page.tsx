@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { PageShell } from '@/components/PageShell';
 
 export const metadata: Metadata = {
-  title: 'Kebijakan Privasi · EduSpin',
+  title: 'Kebijakan Privasi · Squizzy',
   description:
-    'Kebijakan privasi EduSpin: bagaimana kami memperlakukan data anak dan orang tua.',
+    'Kebijakan privasi Squizzy: bagaimana kami memperlakukan data anak dan orang tua.',
 };
 
 const LAST_UPDATED = '18 Mei 2026';
@@ -18,7 +18,7 @@ export default function PrivacyPolicyPage() {
         </p>
 
         <p>
-          Selamat datang di <strong>EduSpin</strong>. Kami menghargai privasi
+          Selamat datang di <strong>Squizzy</strong>. Kami menghargai privasi
           pengguna kami, terutama anak-anak. Kebijakan ini menjelaskan informasi
           apa yang kami kumpulkan, bagaimana kami menggunakannya, dan pilihan
           apa yang Anda miliki.
@@ -75,7 +75,7 @@ export default function PrivacyPolicyPage() {
 
         <Section title="5. Anak di Bawah Umur">
           <p>
-            EduSpin dirancang untuk dimainkan anak-anak di bawah pengawasan
+            Squizzy dirancang untuk dimainkan anak-anak di bawah pengawasan
             orang tua atau wali. Orang tua/wali bertanggung jawab atas
             persetujuan penggunaan dan pengaturan profil anak.
           </p>
@@ -118,7 +118,7 @@ export default function PrivacyPolicyPage() {
         <Section title="9. Kontak">
           <p>
             Pertanyaan atau permintaan terkait privasi dapat dikirim melalui
-            kanal dukungan resmi EduSpin.
+            kanal dukungan resmi Squizzy.
           </p>
         </Section>
       </article>

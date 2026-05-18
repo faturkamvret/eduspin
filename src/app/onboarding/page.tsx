@@ -72,7 +72,7 @@ function Inner() {
               Selamat Datang!
             </h1>
             <p className="font-display text-lg font-bold text-slate-700">
-              di <span className="text-primary-500">EduSpin</span> 🎡
+              di <span className="text-primary-500">Squizzy</span> 🎡
             </p>
             <p className="text-sm font-semibold text-slate-600">
               Jawab kuis seru, kumpulkan koin, lalu dapatkan{' '}

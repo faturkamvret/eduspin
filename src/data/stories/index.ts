@@ -13,7 +13,7 @@ import { STORY_CUCI_TANGAN } from './cuci-tangan';
 import { STORY_BERBAGI_MAINAN } from './berbagi-mainan';
 
 /**
- * All stories available in EduSpin. Order = listing order on /stories page.
+ * All stories available in Squizzy. Order = listing order on /stories page.
  *
  * Mix of two genres:
  * 1. Classic public-domain folktales (Kancil, Kelinci, Timun Mas, Tiga Babi,

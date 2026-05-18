@@ -214,7 +214,7 @@ function Inner() {
       </nav>
 
       <footer className="mt-auto pt-4 text-center text-xs font-bold text-slate-500">
-        EduSpin · Belajar terasa seperti bermain 🎡
+        Squizzy · Belajar terasa seperti bermain 🎡
       </footer>
     </main>
   );
