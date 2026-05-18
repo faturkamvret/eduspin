@@ -121,8 +121,42 @@ export interface SpeakOptions {
 }
 
 /**
+ * Average chars-per-second for Indonesian TTS at rate=1.0. Used to estimate
+ * total utterance duration so the synthetic boundary timer can space word
+ * highlights evenly. Empirically tuned on Chrome's Bahasa voice.
+ */
+const CHARS_PER_SEC_AT_RATE_1 = 14;
+
+/**
+ * If the TTS engine doesn't emit a real boundary within this window after
+ * speech starts, we assume the engine is the server-side variant (which
+ * skips boundary events) and switch to synthetic timer fallback.
+ */
+const BOUNDARY_FALLBACK_WAIT_MS = 600;
+
+/**
+ * Compute the start-char offset of every word in `text`.
+ * Mirrors splitWordsWithOffsets in ReadAlongText so the highlighter and
+ * the timer agree on word positions.
+ */
+function computeWordCharOffsets(text: string): number[] {
+  const offsets: number[] = [];
+  const re = /\S+/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) offsets.push(m.index);
+  return offsets;
+}
+
+/**
  * Speak the given text. Cancels any in-flight utterance first so taps don't
  * pile up.
+ *
+ * Reading-along robustness: if the caller passes `onBoundary` but the
+ * underlying engine doesn't emit native boundary events (common with
+ * Indonesian voices on Chrome/Android, where a server-side synthesizer
+ * is used), we fall back to a synthetic timer that estimates word timing
+ * based on text length and rate. This keeps the read-along highlight
+ * advancing across the whole sentence.
  */
 export async function speak(text: string, opts: SpeakOptions = {}): Promise<void> {
   if (mutedRef || !isAvailable() || !text.trim()) {
@@ -143,16 +177,61 @@ export async function speak(text: string, opts: SpeakOptions = {}): Promise<void
   utter.pitch = opts.pitch ?? 1.1;
   utter.volume = 1;
 
-  utter.onend = () => opts.onEnd?.();
-  utter.onerror = () => opts.onEnd?.();
-  if (opts.onBoundary) {
+  // ─── Boundary handling with synthetic fallback ───
+  // We want exactly one source of truth for word-highlight events. The
+  // engine's native onboundary is preferred (most accurate). If it doesn't
+  // fire within BOUNDARY_FALLBACK_WAIT_MS we kick in synthetic timers.
+  // After fallback engages, native events (if any later arrive) are ignored
+  // to avoid jitter.
+  const boundaryCb = opts.onBoundary;
+  let realBoundaryCount = 0;
+  let usingSynthetic = false;
+  const syntheticTimers: ReturnType<typeof setTimeout>[] = [];
+
+  function clearSyntheticTimers() {
+    for (const t of syntheticTimers) clearTimeout(t);
+    syntheticTimers.length = 0;
+  }
+
+  if (boundaryCb) {
     utter.onboundary = (e: SpeechSynthesisEvent) => {
-      // Only react to word boundaries (some engines also emit 'sentence').
-      if (e.name === 'word' || e.name === undefined) {
-        opts.onBoundary?.(e.charIndex);
-      }
+      if (e.name && e.name !== 'word') return; // ignore sentence-level events
+      realBoundaryCount++;
+      if (!usingSynthetic) boundaryCb(e.charIndex);
+    };
+
+    utter.onstart = () => {
+      // If we already got a native boundary by now, the engine is healthy —
+      // do nothing. Otherwise start a probe timer.
+      if (realBoundaryCount > 0) return;
+      const probe = setTimeout(() => {
+        if (realBoundaryCount > 0) return; // engine emits, all good
+        // Switch to synthetic mode and schedule the remaining word highlights.
+        usingSynthetic = true;
+        const wordOffsets = computeWordCharOffsets(text);
+        if (wordOffsets.length === 0) return;
+        const rate = utter.rate || 1;
+        const estDurationMs = (text.length / CHARS_PER_SEC_AT_RATE_1) * 1000 / rate;
+        const elapsedMs = BOUNDARY_FALLBACK_WAIT_MS;
+        for (const charIndex of wordOffsets) {
+          const targetMs = (charIndex / Math.max(1, text.length)) * estDurationMs;
+          const delay = Math.max(0, targetMs - elapsedMs);
+          const t = setTimeout(() => boundaryCb(charIndex), delay);
+          syntheticTimers.push(t);
+        }
+      }, BOUNDARY_FALLBACK_WAIT_MS);
+      syntheticTimers.push(probe);
     };
   }
+
+  utter.onend = () => {
+    clearSyntheticTimers();
+    opts.onEnd?.();
+  };
+  utter.onerror = () => {
+    clearSyntheticTimers();
+    opts.onEnd?.();
+  };
 
   synth.speak(utter);
 }
