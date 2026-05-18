@@ -311,43 +311,32 @@ function Inner() {
             </motion.div>
           )}
 
-          {/* TTS replay button — always available so kids can re-hear the prompt */}
-          <button
-            type="button"
-            onClick={() => {
-              speak(q.prompt, { rate: 0.92, pitch: 1.15 });
-              if (q.audioCue) setTimeout(() => playAudioCue(q.audioCue!), 1500);
-            }}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-xl shadow-kid transition-all active:scale-90 hover:bg-violet-200"
-            aria-label="Putar ulang pertanyaan"
-          >
-            🔊
-          </button>
-
-          {/* Audio-cue button — large + obvious for sound-question kids */}
-          {q.audioCue && (
-            <motion.button
-              type="button"
-              onClick={() => playAudioCue(q.audioCue!)}
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.06 }}
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ repeat: Infinity, duration: 1.6 }}
-              className="flex h-24 w-24 items-center justify-center rounded-full text-5xl shadow-kid-violet ring-4 ring-white"
-              style={{
-                background:
-                  'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #8b5cf6 100%)',
-                color: 'white',
-              }}
-              aria-label="Putar suara hewan"
-            >
-              🔊
-            </motion.button>
+          {/* Audio-cue button + question text — side by side layout */}
+          {q.audioCue ? (
+            <div className="flex w-full items-center gap-4">
+              <h2 className="flex-1 font-display text-2xl font-extrabold leading-tight text-slate-800 text-left">
+                {q.prompt}
+              </h2>
+              <motion.button
+                type="button"
+                onClick={() => playAudioCue(q.audioCue!)}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.06 }}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl shadow-kid-violet ring-2 ring-white"
+                style={{
+                  background: 'linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #8b5cf6 100%)',
+                  color: 'white',
+                }}
+                aria-label="Putar suara"
+              >
+                🔊
+              </motion.button>
+            </div>
+          ) : (
+            <h2 className="font-display text-2xl font-extrabold leading-tight text-slate-800">
+              {q.prompt}
+            </h2>
           )}
-
-          <h2 className="font-display text-2xl font-extrabold leading-tight text-slate-800">
-            {q.prompt}
-          </h2>
 
           <div className="grid w-full grid-cols-1 gap-4 mt-2">
             {q.options.map((opt) => {

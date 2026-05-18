@@ -595,6 +595,10 @@ export function playCollectibleSfx(collectibleId: string, category?: string): vo
  * Map a quiz audio cue keyword to an SFX.
  * Used by questions that have an `audioCue` field — auto-played when the
  * question appears so the child can hear "what does a dog say?" etc.
+ *
+ * For animal cues we now play REAL recorded sounds (CC0 / public domain OGG
+ * files stored in /public/sounds/animals/). Fantasy/synthetic cues still use
+ * the Web Audio synthesizer as a fallback.
  */
 export type AudioCue =
   | 'bark'
@@ -614,25 +618,85 @@ export type AudioCue =
   | 'sparkle'
   | 'bearGrowl';
 
+/**
+ * Mapping from AudioCue → real audio file path (relative to /public).
+ * Cues without a file entry will fallback to synthesized SFX.
+ */
+const REAL_AUDIO_FILES: Partial<Record<AudioCue, string>> = {
+  bark: '/sounds/animals/dog-bark.ogg',
+  meow: '/sounds/animals/cat-meow.ogg',
+  moo: '/sounds/animals/cow-moo.ogg',
+  quack: '/sounds/animals/duck-quack.ogg',
+  ribbit: '/sounds/animals/frog-croak.ogg',
+  chirp: '/sounds/animals/bird-chirp.ogg',
+  lionRoar: '/sounds/animals/lion-roar.ogg',
+  elephant: '/sounds/animals/elephant-trumpet.ogg',
+  neigh: '/sounds/animals/horse-neigh.ogg',
+  buzz: '/sounds/animals/bee-buzz.ogg',
+  whaleSong: '/sounds/animals/whale-song.ogg',
+  bearGrowl: '/sounds/animals/bear-growl.ogg',
+};
+
+/** Cache of HTMLAudioElement instances so we don't create new ones every play. */
+const audioCache: Partial<Record<AudioCue, HTMLAudioElement>> = {};
+
+/**
+ * Play a real recorded audio file. Returns true if playback started
+ * successfully, false otherwise (so the caller can fallback to synth).
+ */
+function playRealAudio(cue: AudioCue): boolean {
+  if (typeof window === 'undefined') return false;
+  const src = REAL_AUDIO_FILES[cue];
+  if (!src) return false;
+
+  try {
+    let audio = audioCache[cue];
+    if (!audio) {
+      audio = new Audio(src);
+      audio.preload = 'auto';
+      audioCache[cue] = audio;
+    }
+    // Reset to beginning if already playing
+    audio.currentTime = 0;
+    audio.volume = 0.8;
+    audio.play().catch(() => {
+      // Autoplay blocked — silently ignore; user will tap the 🔊 button again
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Synthesizer fallback map for cues without real audio files. */
+const SYNTH_FALLBACK: Record<AudioCue, () => void> = {
+  bark: sfx.bark,
+  meow: sfx.meow,
+  moo: sfx.moo,
+  quack: sfx.quack,
+  ribbit: sfx.ribbit,
+  chirp: sfx.chirp,
+  lionRoar: sfx.lionRoar,
+  elephant: sfx.elephant,
+  neigh: sfx.neigh,
+  buzz: sfx.buzz,
+  whaleSong: sfx.whaleSong,
+  dinoRoar: sfx.dinoRoar,
+  dragonRoar: sfx.dragonRoar,
+  phoenixCry: sfx.phoenixCry,
+  sparkle: sfx.sparkle,
+  bearGrowl: sfx.bearGrowl,
+};
+
+/**
+ * Play an audio cue — tries real recorded sound first, falls back to
+ * synthesized SFX if no file is available or playback fails.
+ */
 export function playAudioCue(cue: AudioCue): void {
   if (mutedRef) return;
-  const map: Record<AudioCue, () => void> = {
-    bark: sfx.bark,
-    meow: sfx.meow,
-    moo: sfx.moo,
-    quack: sfx.quack,
-    ribbit: sfx.ribbit,
-    chirp: sfx.chirp,
-    lionRoar: sfx.lionRoar,
-    elephant: sfx.elephant,
-    neigh: sfx.neigh,
-    buzz: sfx.buzz,
-    whaleSong: sfx.whaleSong,
-    dinoRoar: sfx.dinoRoar,
-    dragonRoar: sfx.dragonRoar,
-    phoenixCry: sfx.phoenixCry,
-    sparkle: sfx.sparkle,
-    bearGrowl: sfx.bearGrowl,
-  };
-  map[cue]?.();
+  // Try real audio first
+  const played = playRealAudio(cue);
+  if (played) return;
+  // Fallback to synthesized version
+  SYNTH_FALLBACK[cue]?.();
 }
