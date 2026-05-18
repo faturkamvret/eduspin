@@ -12,6 +12,11 @@
  * - speak(text) cancels any ongoing utterance, then speaks the new one.
  * - stop() cancels everything.
  * - Voices may load asynchronously (Chrome quirk) — we wait until ready.
+ *
+ * Reading-along highlight:
+ * - speakWithBoundary(text, opts) emits per-word callbacks via the
+ *   SpeechSynthesisUtterance.onboundary event so the caller can highlight
+ *   the currently-spoken word in the UI.
  */
 
 let mutedRef = false;
@@ -80,15 +85,48 @@ function pickIndonesianVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoi
 }
 
 /**
+ * Map child age to a TTS rate that helps with reading-along.
+ *
+ * Younger kids (1-5) get progressively slower speech so they can recognize
+ * each word as it's spoken — important for early reading and spelling.
+ * Age 6+ get near-natural speed since they read more fluently.
+ */
+export function rateForAge(age: number | undefined | null): number {
+  if (age == null) return 0.85;
+  if (age <= 2) return 0.7; // very slow — toddlers learning words
+  if (age <= 4) return 0.8; // slow — preschoolers learning to spell
+  if (age === 5) return 0.85; // moderately slow
+  return 0.95; // 6+ near-natural
+}
+
+export interface SpeakOptions {
+  /** Override the speech rate (0.1–10). Defaults to 0.9. */
+  rate?: number;
+  /** Override the pitch (0–2). Defaults to 1.1 (slightly higher = friendly). */
+  pitch?: number;
+  /**
+   * Called when speech finishes (or fails). Always invoked exactly once
+   * after a speak() call resolves.
+   */
+  onEnd?: () => void;
+  /**
+   * Called for each word boundary the SpeechSynthesis engine reports.
+   * `charIndex` is the offset into the spoken text. Caller can derive the
+   * current word for highlighting.
+   *
+   * Note: not all engines report boundaries (Safari support is patchy).
+   * Callers MUST tolerate getting zero boundary events.
+   */
+  onBoundary?: (charIndex: number) => void;
+}
+
+/**
  * Speak the given text. Cancels any in-flight utterance first so taps don't
  * pile up.
- *
- * @param text   The text to speak.
- * @param onEnd  Optional callback invoked when speaking finishes (or fails).
  */
-export async function speak(text: string, onEnd?: () => void): Promise<void> {
+export async function speak(text: string, opts: SpeakOptions = {}): Promise<void> {
   if (mutedRef || !isAvailable() || !text.trim()) {
-    onEnd?.();
+    opts.onEnd?.();
     return;
   }
   const synth = window.speechSynthesis;
@@ -101,13 +139,20 @@ export async function speak(text: string, onEnd?: () => void): Promise<void> {
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = voice?.lang ?? 'id-ID';
   if (voice) utter.voice = voice;
-  // Slightly slower + slightly higher pitch — friendlier for kids.
-  utter.rate = 0.9;
-  utter.pitch = 1.1;
+  utter.rate = opts.rate ?? 0.9;
+  utter.pitch = opts.pitch ?? 1.1;
   utter.volume = 1;
 
-  utter.onend = () => onEnd?.();
-  utter.onerror = () => onEnd?.();
+  utter.onend = () => opts.onEnd?.();
+  utter.onerror = () => opts.onEnd?.();
+  if (opts.onBoundary) {
+    utter.onboundary = (e: SpeechSynthesisEvent) => {
+      // Only react to word boundaries (some engines also emit 'sentence').
+      if (e.name === 'word' || e.name === undefined) {
+        opts.onBoundary?.(e.charIndex);
+      }
+    };
+  }
 
   synth.speak(utter);
 }
