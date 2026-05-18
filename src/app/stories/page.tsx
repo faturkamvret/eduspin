@@ -32,7 +32,11 @@ function Inner() {
   if (!profile) return null;
 
   return (
-    <PageShell title="📖 Buku Cerita" right={<CoinBadge coins={wallet.coins} />}>
+    <PageShell
+      title="📖 Buku Cerita"
+      right={<CoinBadge coins={wallet.coins} />}
+      backHref="/home"
+    >
       <div className="flex justify-center">
         <Mascot
           mood="cheer"
