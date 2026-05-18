@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -7,8 +8,6 @@ import { useAppStore } from '@/store/useAppStore';
 import { HydrationGate } from '@/components/HydrationGate';
 import { PageShell } from '@/components/PageShell';
 import { sfx, setMuted as setSfxMuted } from '@/lib/sfx';
-import { PITY_EPIC_THRESHOLD, PITY_LEGENDARY_THRESHOLD, RARITY_RATES } from '@/lib/gacha';
-import { SHOP_PRICES } from '@/store/useAppStore';
 import { SyncBadge } from '@/components/SyncBadge';
 import type { Gender } from '@/types';
 
@@ -219,37 +218,6 @@ function Inner() {
         )}
       </Section>
 
-      <Section title="🛍️ Toko Hadiah">
-        <p className="text-sm font-semibold text-slate-700">
-          Harga tetap, tanpa kejutan:
-        </p>
-        <ul className="space-y-1 text-sm font-semibold text-slate-700">
-          <li>⚪ Biasa: {SHOP_PRICES.common} 🪙</li>
-          <li>🔵 Langka: {SHOP_PRICES.rare} 🪙</li>
-          <li className="text-xs text-slate-500">
-            ✨ Hadiah Epik & Legendaris hanya dari Claw Machine
-          </li>
-        </ul>
-      </Section>
-
-      <Section title="🎰 Transparansi Claw Machine">
-        <p className="text-sm font-semibold text-slate-700">
-          Kami percaya keterbukaan. Berikut peluang setiap rarity:
-        </p>
-        <ul className="space-y-1 text-sm font-semibold text-slate-700">
-          <li>⚪ Biasa: {Math.round(RARITY_RATES.common * 100)}%</li>
-          <li>🔵 Langka: {Math.round(RARITY_RATES.rare * 100)}%</li>
-          <li>🟣 Epik: {Math.round(RARITY_RATES.epic * 100)}%</li>
-          <li>🟡 Legendaris: {Math.round(RARITY_RATES.legendary * 100)}%</li>
-          <li>
-            🎁 Tarikan ke-{PITY_EPIC_THRESHOLD} tanpa Epik → dijamin Epik atau lebih
-          </li>
-          <li>
-            🌟 Tarikan ke-{PITY_LEGENDARY_THRESHOLD} tanpa Legendaris → dijamin Legendaris
-          </li>
-        </ul>
-      </Section>
-
       <Section title="ℹ️ Tentang Aplikasi">
         <p className="text-sm font-semibold text-slate-700">
           EduSpin dibuat untuk membantu anak belajar lewat permainan koleksi yang
@@ -257,6 +225,30 @@ function Inner() {
           pengumpulan data pribadi anak. 💖
         </p>
         <p className="text-xs font-bold text-slate-500">EduSpin · MVP v0.2 · 🇮🇩</p>
+      </Section>
+
+      <Section title="📜 Legal & Kebijakan">
+        <p className="text-sm font-semibold text-slate-700">
+          Bacalah ketentuan penggunaan dan kebijakan privasi kami sebelum melanjutkan.
+        </p>
+        <div className="grid grid-cols-1 gap-2">
+          <Link
+            href="/privacy"
+            onClick={() => sfx.click()}
+            className="flex items-center justify-between rounded-3xl bg-white px-4 py-3 font-display font-bold text-slate-700 shadow-kid transition-all hover:bg-slate-50"
+          >
+            <span>🔒 Kebijakan Privasi</span>
+            <span aria-hidden>→</span>
+          </Link>
+          <Link
+            href="/terms"
+            onClick={() => sfx.click()}
+            className="flex items-center justify-between rounded-3xl bg-white px-4 py-3 font-display font-bold text-slate-700 shadow-kid transition-all hover:bg-slate-50"
+          >
+            <span>📃 Perjanjian Pengguna</span>
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
       </Section>
 
       <Section title="⚠️ Zona Bahaya" tone="danger">
