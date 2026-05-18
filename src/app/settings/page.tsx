@@ -81,10 +81,7 @@ function Inner() {
 
   return (
     <PageShell title="⚙️ Pengaturan">
-      <Section title="☁️ Sinkronisasi Awan">
-        <SyncBadge variant="full" />
-      </Section>
-
+      {/* 1. Profil Anak */}
       <Section title="👤 Profil Anak">
         <label className="flex flex-col gap-2">
           <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -170,6 +167,7 @@ function Inner() {
         </div>
       </Section>
 
+      {/* 2. Suara */}
       <Section title="🔊 Suara">
         <label className="flex items-center justify-between">
           <span className="font-display font-bold">Bisukan efek suara</span>
@@ -220,16 +218,7 @@ function Inner() {
         )}
       </Section>
 
-      <Section title="ℹ️ Tentang Aplikasi">
-        <p className="text-sm font-semibold text-slate-700">
-          Squizzy dibuat untuk membantu anak belajar lewat permainan koleksi yang
-          menyenangkan dan interaktif seperti boneka squishy. Tidak ada iklan,
-          tidak ada pembelian uang asli, tidak ada pengumpulan data pribadi
-          anak. 💖
-        </p>
-        <p className="text-xs font-bold text-slate-500">Squizzy · MVP v0.3 · 🇮🇩</p>
-      </Section>
-
+      {/* 3. Kritik & Saran */}
       <Section title="📝 Kritik & Saran">
         <p className="text-sm font-semibold text-slate-700">
           Punya ide, saran, atau menemukan bug? Kirim langsung ke tim kami.
@@ -246,6 +235,7 @@ function Inner() {
         </button>
       </Section>
 
+      {/* 4. Legal & Kebijakan */}
       <Section title="📜 Legal & Kebijakan">
         <p className="text-sm font-semibold text-slate-700">
           Bacalah ketentuan penggunaan dan kebijakan privasi kami sebelum melanjutkan.
@@ -270,6 +260,23 @@ function Inner() {
         </div>
       </Section>
 
+      {/* 5. Tentang Aplikasi */}
+      <Section title="ℹ️ Tentang Aplikasi">
+        <p className="text-sm font-semibold text-slate-700">
+          Squizzy dibuat untuk membantu anak belajar lewat permainan koleksi yang
+          menyenangkan dan interaktif seperti boneka squishy. Tidak ada iklan,
+          tidak ada pembelian uang asli, tidak ada pengumpulan data pribadi
+          anak. 💖
+        </p>
+        <p className="text-xs font-bold text-slate-500">Squizzy · MVP v0.3 · 🇮🇩</p>
+      </Section>
+
+      {/* 6. Penyimpanan Data (formerly: Sinkronisasi Awan) */}
+      <Section title="☁️ Penyimpanan Data">
+        <SyncBadge variant="full" />
+      </Section>
+
+      {/* 7. Zona Bahaya */}
       <Section title="⚠️ Zona Bahaya" tone="danger">
         {!confirmReset ? (
           <button
