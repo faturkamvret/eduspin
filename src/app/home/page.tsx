@@ -266,6 +266,13 @@ function Inner() {
           onClick={() => router.push('/quiz')}
         />
         <MenuButton
+          emoji="📖"
+          title="Buku Cerita"
+          subtitle="Baca cerita & jawab pertanyaan!"
+          gradient="linear-gradient(135deg, #93c5fd 0%, #60a5fa 50%, #3b82f6 100%)"
+          onClick={() => router.push('/stories')}
+        />
+        <MenuButton
           emoji="🛍️"
           title="Toko Hadiah"
           subtitle="Beli koleksi & mainkan claw machine!"
