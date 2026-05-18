@@ -59,6 +59,7 @@ function Inner() {
     <PageShell
       title={`${story.coverEmoji} ${story.title}`}
       right={<CoinBadge coins={wallet.coins} />}
+      backHref="/stories"
     >
       {/* Hero */}
       <motion.section
