@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
@@ -9,8 +9,9 @@ import { CoinBadge } from '@/components/CoinBadge';
 import { Confetti } from '@/components/Confetti';
 import { Mascot } from '@/components/Mascot';
 import { FloatingDeco } from '@/components/FloatingDeco';
+import { ReadAlongText } from '@/components/ReadAlongText';
 import { getChapterById } from '@/data/stories';
-import { speak, stopSpeaking } from '@/lib/tts';
+import { speak, stopSpeaking, rateForAge } from '@/lib/tts';
 import { sfx } from '@/lib/sfx';
 import type { ChapterQuestion } from '@/types';
 
@@ -44,6 +45,9 @@ function Inner() {
     storyBonus: number;
   } | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // Char index into the joined narration for read-along highlighting.
+  // null → not currently highlighting.
+  const [activeChar, setActiveChar] = useState<number | null>(null);
 
   const data = getChapterById(params.storyId, params.chapterId);
 
@@ -58,14 +62,26 @@ function Inner() {
     return next ? `/stories/${data.story.id}/${next.id}` : null;
   }, [data]);
 
+  // Pre-compute per-paragraph char offsets so each paragraph can map a global
+  // boundary index back to its local offset. Joined with ' ' delimiter to
+  // match what we pass to speak().
+  const paragraphOffsets = useMemo(() => {
+    if (!data) return [] as number[];
+    const offsets: number[] = [];
+    let acc = 0;
+    for (let i = 0; i < data.chapter.narration.length; i++) {
+      offsets.push(acc);
+      acc += data.chapter.narration[i]!.length + 1; // +1 for the joining space
+    }
+    return offsets;
+  }, [data]);
+
   // Profile guard
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
 
-  // Reset all per-chapter state whenever the chapter id changes. This is what
-  // makes "Lanjut Bab Berikutnya" work — clicking it pushes a new URL, and on
-  // the next render this effect resets us back to the narration screen.
+  // Reset all per-chapter state whenever the chapter id changes.
   useEffect(() => {
     setScreen('narration');
     setQIdx(0);
@@ -76,11 +92,22 @@ function Inner() {
     setResult(null);
     stopSpeaking();
     setIsSpeaking(false);
+    setActiveChar(null);
   }, [params.chapterId]);
 
   // Stop TTS on unmount (safety net)
   useEffect(() => {
     return () => stopSpeaking();
+  }, []);
+
+  // Latest values for the boundary callback. We use a ref so the callback
+  // captured by SpeechSynthesisUtterance always sees the freshest state.
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   if (!profile) return null;
@@ -106,16 +133,33 @@ function Inner() {
     if (isSpeaking) {
       stopSpeaking();
       setIsSpeaking(false);
+      setActiveChar(null);
       return;
     }
     const fullText = chapter.narration.join(' ');
     setIsSpeaking(true);
-    speak(fullText, () => setIsSpeaking(false));
+    setActiveChar(0);
+    // Age-based speech rate for reading-along: younger = slower so kids can
+    // follow each word and learn to spell.
+    const rate = rateForAge(profile?.age);
+    speak(fullText, {
+      rate,
+      onBoundary: (charIndex) => {
+        if (!isMountedRef.current) return;
+        setActiveChar(charIndex);
+      },
+      onEnd: () => {
+        if (!isMountedRef.current) return;
+        setIsSpeaking(false);
+        setActiveChar(null);
+      },
+    });
   }
 
   function handleGoToQuiz() {
     stopSpeaking();
     setIsSpeaking(false);
+    setActiveChar(null);
     setScreen('quiz');
     sfx.click();
   }
@@ -158,6 +202,10 @@ function Inner() {
 
   // ─── NARRATION SCREEN (focus mode, X to exit) ───
   if (screen === 'narration') {
+    // Show a tiny hint about reading speed when below age 6 — parents
+    // appreciate seeing why the voice is slow.
+    const showSlowHint = isSpeaking && (profile?.age ?? 6) <= 5;
+
     return (
       <FocusShell
         onExit={() => router.push(exitToStoryHref)}
@@ -179,17 +227,28 @@ function Inner() {
             {chapter.illustration}
           </motion.div>
 
-          {/* Narration text */}
-          <div className="flex flex-col gap-3 text-left">
+          {/* Narration text — with read-along highlight when TTS is active */}
+          <div className="flex flex-col gap-3 text-left w-full">
             {chapter.narration.map((para, i) => (
-              <p
+              <ReadAlongText
                 key={i}
+                text={para}
+                paragraphCharOffset={paragraphOffsets[i] ?? 0}
+                activeCharIndex={isSpeaking ? activeChar : null}
                 className="font-display text-lg font-bold leading-relaxed text-slate-700"
-              >
-                {para}
-              </p>
+              />
             ))}
           </div>
+
+          {showSlowHint && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800"
+            >
+              🐢 Bicara pelan-pelan supaya bisa belajar mengeja
+            </motion.div>
+          )}
 
           {/* TTS button */}
           <motion.button

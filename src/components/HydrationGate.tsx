@@ -3,6 +3,7 @@
 import { useAppStore } from '@/store/useAppStore';
 import { useEffect, type ReactNode } from 'react';
 import { setMuted } from '@/lib/sfx';
+import { setTtsMuted } from '@/lib/tts';
 import { flushSync, startSync } from '@/lib/sync';
 import { isFirebaseEnabled } from '@/lib/firebase';
 
@@ -15,9 +16,10 @@ export function HydrationGate({ children }: { children: ReactNode }) {
   const hydrated = useAppStore((s) => s.hydrated);
   const muted = useAppStore((s) => s.settings.muted);
 
-  // Apply mute setting to SFX engine
+  // Apply mute setting to SFX engine + story-mode TTS
   useEffect(() => {
     setMuted(muted);
+    setTtsMuted(muted);
   }, [muted]);
 
   // Boot cloud sync once after hydration. startSync() is idempotent and a no-op
