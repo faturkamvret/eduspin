@@ -17,6 +17,10 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
   color: 'linear-gradient(135deg, #bae3ff 0%, #7dd3fc 50%, #38bdf8 100%)',
   animal: 'linear-gradient(135deg, #bdf5d8 0%, #86efac 50%, #4ade80 100%)',
   counting: 'linear-gradient(135deg, #fff3b8 0%, #fde047 50%, #facc15 100%)',
+  alphabet: 'linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 50%, #8b5cf6 100%)',
+  body: 'linear-gradient(135deg, #fecdd3 0%, #fda4af 50%, #f43f5e 100%)',
+  fruit: 'linear-gradient(135deg, #fed7aa 0%, #fdba74 50%, #f97316 100%)',
+  opposite: 'linear-gradient(135deg, #99f6e4 0%, #5eead4 50%, #14b8a6 100%)',
 };
 
 export default function QuizCategoryPicker() {

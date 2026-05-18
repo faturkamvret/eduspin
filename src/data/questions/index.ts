@@ -3,12 +3,20 @@ import { SHAPE_QUESTIONS } from './shape';
 import { COLOR_QUESTIONS } from './color';
 import { ANIMAL_QUESTIONS } from './animal';
 import { COUNTING_QUESTIONS } from './counting';
+import { ALPHABET_QUESTIONS } from './alphabet';
+import { BODY_QUESTIONS } from './body';
+import { FRUIT_QUESTIONS } from './fruit';
+import { OPPOSITE_QUESTIONS } from './opposite';
 
 export const ALL_QUESTIONS: QuizQuestion[] = [
   ...SHAPE_QUESTIONS,
   ...COLOR_QUESTIONS,
   ...ANIMAL_QUESTIONS,
   ...COUNTING_QUESTIONS,
+  ...ALPHABET_QUESTIONS,
+  ...BODY_QUESTIONS,
+  ...FRUIT_QUESTIONS,
+  ...OPPOSITE_QUESTIONS,
 ];
 
 const BY_CATEGORY: Record<QuizCategoryId, QuizQuestion[]> = {
@@ -16,6 +24,10 @@ const BY_CATEGORY: Record<QuizCategoryId, QuizQuestion[]> = {
   color: COLOR_QUESTIONS,
   animal: ANIMAL_QUESTIONS,
   counting: COUNTING_QUESTIONS,
+  alphabet: ALPHABET_QUESTIONS,
+  body: BODY_QUESTIONS,
+  fruit: FRUIT_QUESTIONS,
+  opposite: OPPOSITE_QUESTIONS,
 };
 
 export function getQuestionsByCategory(category: QuizCategoryId): QuizQuestion[] {

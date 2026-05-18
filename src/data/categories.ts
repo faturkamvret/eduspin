@@ -29,6 +29,34 @@ export const QUIZ_CATEGORIES: QuizCategoryMeta[] = [
     description: 'Hitung benda-benda lucu dengan angka',
     color: 'bg-amber-400',
   },
+  {
+    id: 'alphabet',
+    label: 'Huruf',
+    emoji: '🔤',
+    description: 'Mengenal huruf A sampai Z dan kata-katanya',
+    color: 'bg-violet-400',
+  },
+  {
+    id: 'body',
+    label: 'Tubuh',
+    emoji: '👶',
+    description: 'Bagian tubuh: mata, hidung, mulut, telinga…',
+    color: 'bg-rose-400',
+  },
+  {
+    id: 'fruit',
+    label: 'Buah',
+    emoji: '🍓',
+    description: 'Kenali aneka buah yang lezat dan sehat',
+    color: 'bg-orange-400',
+  },
+  {
+    id: 'opposite',
+    label: 'Lawan Kata',
+    emoji: '↔️',
+    description: 'Besar–kecil, panas–dingin, dan teman-temannya',
+    color: 'bg-teal-400',
+  },
 ];
 
 export function getCategoryMeta(id: string): QuizCategoryMeta | undefined {

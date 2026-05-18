@@ -14,7 +14,15 @@ export type Gender = 'boy' | 'girl';
 /** Gender tag on each collectible for filtering. */
 export type CollectibleGender = 'boy' | 'girl' | 'unisex';
 
-export type QuizCategoryId = 'shape' | 'color' | 'animal' | 'counting';
+export type QuizCategoryId =
+  | 'shape'
+  | 'color'
+  | 'animal'
+  | 'counting'
+  | 'alphabet'
+  | 'body'
+  | 'fruit'
+  | 'opposite';
 
 export interface QuizCategoryMeta {
   id: QuizCategoryId;
