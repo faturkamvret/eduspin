@@ -505,52 +505,58 @@ export const sfx = {
 /**
  * Map a collectible id (or category) to an appropriate SFX.
  * The id-based mapping wins; category is the fallback.
+ *
+ * Animal collectibles route through `playAudioCue()` so they play the REAL
+ * recorded CC0 sound (e.g., a real bear growl, real cat meow) instead of the
+ * synthesized fallback.
  */
 export function playCollectibleSfx(collectibleId: string, category?: string): void {
   if (mutedRef) return;
   const id = collectibleId.toLowerCase();
 
   // ─── Specific id matches first ───
-  // Bears & bear-likes
-  if (id.includes('bear') || id.includes('teddy') || id === 'panda') return sfx.bearGrowl();
-  // Dinosaurs
-  if (id.includes('dino') || id.includes('trex')) return sfx.dinoRoar();
-  // Dragons & rainbow-dragon
-  if (id.includes('dragon') || id.includes('drako')) return sfx.dragonRoar();
-  // Phoenix
-  if (id.includes('phoenix')) return sfx.phoenixCry();
-  // Unicorn / pony
-  if (id.includes('unicorn') || id.includes('pony') || id.includes('horse')) {
-    return sfx.unicornNeigh();
+  // Bears & bear-likes (panda is morphologically close enough) → real growl
+  if (id.includes('bear') || id.includes('teddy') || id === 'panda') {
+    return playAudioCue('bearGrowl');
   }
-  // Mermaid
+  // Dinosaurs (synthesized — no real recording)
+  if (id.includes('dino') || id.includes('trex')) return sfx.dinoRoar();
+  // Dragons & rainbow-dragon (synthesized)
+  if (id.includes('dragon') || id.includes('drako')) return sfx.dragonRoar();
+  // Phoenix (synthesized)
+  if (id.includes('phoenix')) return sfx.phoenixCry();
+  // Unicorn / pony / horse → real horse neigh (with fallback)
+  if (id.includes('unicorn')) return sfx.unicornNeigh();
+  if (id.includes('pony') || id.includes('horse')) return playAudioCue('neigh');
+  // Mermaid (synthesized — magical)
   if (id.includes('mermaid')) return sfx.mermaidSong();
   // Fairy
   if (id.includes('fairy') || id.includes('peri')) return sfx.fairyChime();
   // Star / crown — sparkle
   if (id.includes('star') || id.includes('crown')) return sfx.sparkle();
-  // Whale (incl. cosmic-whale)
-  if (id.includes('whale')) return sfx.whaleSong();
-  // Cat-likes (but not astro-cat → that's space/sparkle)
+  // Whale (incl. cosmic-whale) → real whale song
+  if (id.includes('whale')) return playAudioCue('whaleSong');
+  // Astronaut-cat → space sparkle (not a real cat)
   if (id.includes('astro')) return sfx.sparkle();
-  if (id.includes('cat')) return sfx.meow();
-  // Dog
-  if (id.includes('dog')) return sfx.bark();
-  // Bird-ish, fish
-  if (id.includes('fish') || id.includes('bird')) return sfx.chirp();
-  // Bee
-  if (id.includes('bee')) return sfx.buzz();
-  // Frog
-  if (id.includes('frog') || id.includes('katak')) return sfx.ribbit();
-  // Cow
-  if (id.includes('cow') || id.includes('sapi')) return sfx.moo();
-  // Lion
-  if (id.includes('lion') || id.includes('singa')) return sfx.lionRoar();
-  // Elephant
-  if (id.includes('elephant') || id.includes('gajah')) return sfx.elephant();
-  // Duck
-  if (id.includes('duck') || id.includes('bebek')) return sfx.quack();
-  // Rabbit / kelinci — soft chirp
+  // Cat → real meow
+  if (id.includes('cat')) return playAudioCue('meow');
+  // Dog → real bark
+  if (id.includes('dog')) return playAudioCue('bark');
+  // Bird-ish, fish → real bird chirp
+  if (id.includes('fish') || id.includes('bird')) return playAudioCue('chirp');
+  // Bee → real buzz
+  if (id.includes('bee')) return playAudioCue('buzz');
+  // Frog → real ribbit
+  if (id.includes('frog') || id.includes('katak')) return playAudioCue('ribbit');
+  // Cow → real moo
+  if (id.includes('cow') || id.includes('sapi')) return playAudioCue('moo');
+  // Lion → real roar
+  if (id.includes('lion') || id.includes('singa')) return playAudioCue('lionRoar');
+  // Elephant → real trumpet
+  if (id.includes('elephant') || id.includes('gajah')) return playAudioCue('elephant');
+  // Duck → real quack
+  if (id.includes('duck') || id.includes('bebek')) return playAudioCue('quack');
+  // Rabbit / kelinci — soft chirpy sound (no real rabbit recording)
   if (id.includes('rabbit') || id.includes('kelinci')) return sfx.pop();
   // Fox / panda
   if (id.includes('fox') || id.includes('rubah')) return sfx.yay();
@@ -582,7 +588,7 @@ export function playCollectibleSfx(collectibleId: string, category?: string): vo
   }
 
   // ─── Category fallback ───
-  if (category === 'animal') return sfx.meow();
+  if (category === 'animal') return playAudioCue('meow');
   if (category === 'dinosaur') return sfx.dinoRoar();
   if (category === 'fantasy') return sfx.fairyChime();
   if (category === 'robot') return sfx.robotBeep();
