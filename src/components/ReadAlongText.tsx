@@ -1,6 +1,5 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
 import type { CSSProperties } from 'react';
 
 /**
@@ -10,6 +9,11 @@ import type { CSSProperties } from 'react';
  *
  * Word boundary detection lives in the parent (it owns the SpeechSynthesis
  * onboundary event). This component only renders highlight state.
+ *
+ * Stability: every word is rendered as a STABLE plain <span> (no
+ * mount/unmount, no AnimatePresence). Highlight is applied via inline style
+ * using CSS transition + box-shadow (not padding) so the text never reflows
+ * when the active word changes — the surrounding words stay perfectly still.
  */
 interface Props {
   /**
@@ -58,11 +62,20 @@ function splitWordsWithOffsets(text: string): Word[] {
   return words;
 }
 
-const HIGHLIGHT_STYLE: CSSProperties = {
+// Use box-shadow (not padding) for the highlight halo so glyph metrics never
+// change between active/inactive states. This keeps the rest of the line
+// completely stationary while the highlight slides from word to word.
+const ACTIVE_STYLE: CSSProperties = {
   backgroundColor: '#fef08a', // yellow-200
   borderRadius: '6px',
-  padding: '0 4px',
-  margin: '0 -2px',
+  boxShadow: '0 0 0 4px #fef08a',
+  transition: 'background-color 200ms ease, box-shadow 200ms ease, color 200ms ease',
+};
+const INACTIVE_STYLE: CSSProperties = {
+  backgroundColor: 'transparent',
+  borderRadius: '6px',
+  boxShadow: '0 0 0 0 rgba(254,240,138,0)',
+  transition: 'background-color 200ms ease, box-shadow 200ms ease, color 200ms ease',
 };
 
 export function ReadAlongText({
@@ -102,27 +115,14 @@ export function ReadAlongText({
       {words.map((w, i) => {
         const isActive = i === activeIdx;
         return (
-          <span key={`${w.startChar}-${w.text}`} className="relative inline">
-            <AnimatePresence mode="wait">
-              {isActive ? (
-                <motion.span
-                  key="active"
-                  initial={{ scale: 0.95 }}
-                  animate={{ scale: 1.05 }}
-                  exit={{ scale: 1 }}
-                  transition={{ duration: 0.18, ease: 'easeOut' }}
-                  style={HIGHLIGHT_STYLE}
-                  className="inline-block text-amber-900 font-extrabold"
-                >
-                  {w.text}
-                </motion.span>
-              ) : (
-                <span key="inactive" className="inline-block">
-                  {w.text}
-                </span>
-              )}
-            </AnimatePresence>
-            {/* Render trailing space so word wrapping stays natural */}
+          <span
+            key={`${w.startChar}-${w.text}`}
+            style={isActive ? ACTIVE_STYLE : INACTIVE_STYLE}
+            className={isActive ? 'text-amber-900' : ''}
+          >
+            {w.text}
+            {/* Trailing space lives outside the highlighted span so the
+                halo box doesn't include the gap between words. */}
             {i < words.length - 1 ? ' ' : ''}
           </span>
         );

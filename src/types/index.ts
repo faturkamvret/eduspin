@@ -56,12 +56,10 @@ export interface QuizQuestion {
     | 'elephant'
     | 'neigh'
     | 'buzz'
-    | 'whaleSong'
     | 'dinoRoar'
     | 'dragonRoar'
     | 'phoenixCry'
-    | 'sparkle'
-    | 'bearGrowl';
+    | 'sparkle';
   options: QuizOption[];
   correctOptionId: string;
 }

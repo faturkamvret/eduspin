@@ -195,37 +195,6 @@ export const sfx = {
     tone(c, t + 0.06, { freq: 2800, durationMs: 50, type: 'sine', gain: 0.1 });
     tone(c, t + 0.14, { freq: 2400, durationMs: 50, type: 'sine', gain: 0.08 });
   },
-  /** Bear growl — low sawtooth glide + vibrato. */
-  bearGrowl(): void {
-    if (mutedRef) return;
-    const c = getCtx();
-    if (!c) return;
-    const t = c.currentTime;
-    const dur = 0.7;
-    const osc = c.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(140, t);
-    osc.frequency.exponentialRampToValueAtTime(70, t + dur);
-    const vibrato = c.createOscillator();
-    vibrato.type = 'sine';
-    vibrato.frequency.setValueAtTime(8, t);
-    const vibratoGain = c.createGain();
-    vibratoGain.gain.setValueAtTime(12, t);
-    vibrato.connect(vibratoGain).connect(osc.frequency);
-    const filter = c.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(900, t);
-    const g = c.createGain();
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.22, t + 0.05);
-    g.gain.linearRampToValueAtTime(0.18, t + dur - 0.15);
-    g.gain.linearRampToValueAtTime(0, t + dur);
-    osc.connect(filter).connect(g).connect(c.destination);
-    osc.start(t);
-    vibrato.start(t);
-    osc.stop(t + dur + 0.05);
-    vibrato.stop(t + dur + 0.05);
-  },
   /** Lion roar — long, deep, and rumbling (very different from bark). */
   lionRoar(): void {
     if (mutedRef) return;
@@ -303,15 +272,6 @@ export const sfx = {
     const t = c.currentTime;
     glide(c, t, 900, 500, 200, 'triangle', 0.14);
     glide(c, t + 0.18, 700, 350, 250, 'triangle', 0.14);
-  },
-  /** Whale song — slow, deep glide. */
-  whaleSong(): void {
-    if (mutedRef) return;
-    const c = getCtx();
-    if (!c) return;
-    const t = c.currentTime;
-    glide(c, t, 200, 80, 1200, 'sine', 0.18, 500);
-    glide(c, t + 0.4, 130, 200, 800, 'sine', 0.12, 500);
   },
   /** Bee buzz — continuous vibrating hum, clearly "insect". */
   buzz(): void {
@@ -515,9 +475,10 @@ export function playCollectibleSfx(collectibleId: string, category?: string): vo
   const id = collectibleId.toLowerCase();
 
   // ─── Specific id matches first ───
-  // Bears & bear-likes (panda is morphologically close enough) → real growl
-  if (id.includes('bear') || id.includes('teddy') || id === 'panda') {
-    return playAudioCue('bearGrowl');
+  // Bears & bear-likes (panda, teddy, koala) → friendly "yay" cheer instead
+  // of a real bear growl. Real growls can sound scary to small children.
+  if (id.includes('bear') || id.includes('teddy') || id === 'panda' || id.includes('koala')) {
+    return sfx.yay();
   }
   // Dinosaurs (synthesized — no real recording)
   if (id.includes('dino') || id.includes('trex')) return sfx.dinoRoar();
@@ -534,8 +495,9 @@ export function playCollectibleSfx(collectibleId: string, category?: string): vo
   if (id.includes('fairy') || id.includes('peri')) return sfx.fairyChime();
   // Star / crown — sparkle
   if (id.includes('star') || id.includes('crown')) return sfx.sparkle();
-  // Whale (incl. cosmic-whale) → real whale song
-  if (id.includes('whale')) return playAudioCue('whaleSong');
+  // Whale (incl. cosmic-whale) → magical sparkle (no real whale-song recording —
+  // deep whale calls can feel eerie; sparkle fits the "cosmic" theme).
+  if (id.includes('whale') || id.includes('paus')) return sfx.fairyChime();
   // Astronaut-cat → space sparkle (not a real cat)
   if (id.includes('astro')) return sfx.sparkle();
   // Cat → real meow
@@ -617,12 +579,10 @@ export type AudioCue =
   | 'elephant'
   | 'neigh'
   | 'buzz'
-  | 'whaleSong'
   | 'dinoRoar'
   | 'dragonRoar'
   | 'phoenixCry'
-  | 'sparkle'
-  | 'bearGrowl';
+  | 'sparkle';
 
 /**
  * Mapping from AudioCue → real audio file path (relative to /public).
@@ -639,8 +599,6 @@ const REAL_AUDIO_FILES: Partial<Record<AudioCue, string>> = {
   elephant: '/sounds/animals/elephant-trumpet.ogg',
   neigh: '/sounds/animals/horse-neigh.ogg',
   buzz: '/sounds/animals/bee-buzz.ogg',
-  whaleSong: '/sounds/animals/whale-song.ogg',
-  bearGrowl: '/sounds/animals/bear-growl.ogg',
 };
 
 /** Cache of HTMLAudioElement instances so we don't create new ones every play. */
@@ -686,12 +644,10 @@ const SYNTH_FALLBACK: Record<AudioCue, () => void> = {
   elephant: sfx.elephant,
   neigh: sfx.neigh,
   buzz: sfx.buzz,
-  whaleSong: sfx.whaleSong,
   dinoRoar: sfx.dinoRoar,
   dragonRoar: sfx.dragonRoar,
   phoenixCry: sfx.phoenixCry,
   sparkle: sfx.sparkle,
-  bearGrowl: sfx.bearGrowl,
 };
 
 /**

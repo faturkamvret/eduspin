@@ -16,13 +16,12 @@ const MOODS: Record<MoodKey, { emoji: string; bubble?: string }> = {
 /**
  * Map an emoji to the audio cue that best matches its real animal voice.
  * Fantasy/non-animal emojis are not in this map — they fall back to a soft click.
+ *
+ * Note: bear-likes (🐻🐼🧸🐨) intentionally do NOT have a growl mapping —
+ * a real bear growl can sound scary to small children. They fall through
+ * to a friendly soft "pop" via the default click in handleClick.
  */
 const EMOJI_TO_CUE: Record<string, AudioCue> = {
-  // Bear-likes share the bear growl recording (closest real voice match).
-  '🐻': 'bearGrowl',
-  '🐼': 'bearGrowl', // panda: same family
-  '🧸': 'bearGrowl', // teddy: pretend bear
-  '🐨': 'bearGrowl', // koala: also bear-shaped
   // Foxes don't have a recording; we cheat with a dog bark (canid).
   '🦊': 'bark',
   '🐶': 'bark',
@@ -40,7 +39,6 @@ const EMOJI_TO_CUE: Record<string, AudioCue> = {
   '🦁': 'lionRoar',
   '🐘': 'elephant',
   '🐝': 'buzz',
-  '🐳': 'whaleSong',
   '🐴': 'neigh',
 };
 
