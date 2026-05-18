@@ -537,6 +537,20 @@ export const useAppStore = create<AppState>()(
 
       setMuted: (muted) => set({ settings: { ...get().settings, muted } }),
 
+      setBgmEnabled: (enabled) => set({ settings: { ...get().settings, bgmEnabled: enabled } }),
+
+      markPlayed: () => set({ lastPlayedAt: Date.now() }),
+
+      lastPlayedAt: null,
+
+      missionProgress: null,
+
+      reportMissionAnswer: (_categoryId, _correct) => {
+        // Stub implementation — mission system can be fleshed out later.
+        // For now, returns not-completed so callers don't break.
+        return { completed: false };
+      },
+
       completeStoryChapter: (storyId, chapterId, correctCount, totalChapters) => {
         const now = Date.now();
         const stories = get().stories;
@@ -601,6 +615,8 @@ export const useAppStore = create<AppState>()(
         settings: state.settings,
         shopOffers: state.shopOffers,
         stories: state.stories,
+        lastPlayedAt: state.lastPlayedAt,
+        missionProgress: state.missionProgress,
       }),
       onRehydrateStorage: () => (state) => {
         // Mark hydrated after persist middleware finishes loading
