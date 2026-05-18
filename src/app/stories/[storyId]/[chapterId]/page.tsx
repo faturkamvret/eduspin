@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, COIN_CONSTANTS } from '@/store/useAppStore';
@@ -31,6 +31,7 @@ function Inner() {
   const wallet = useAppStore((s) => s.wallet);
   const completeStoryChapter = useAppStore((s) => s.completeStoryChapter);
 
+  // All session state — reset whenever chapter id changes (auto-advance flow).
   const [screen, setScreen] = useState<Screen>('narration');
   const [qIdx, setQIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -46,11 +47,38 @@ function Inner() {
 
   const data = getChapterById(params.storyId, params.chapterId);
 
+  // Story exit URL — single source of truth for closing focus mode.
+  const exitToStoryHref = `/stories/${params.storyId}`;
+
+  // Compute next chapter (if any) for auto-advance after results.
+  const nextChapterHref = useMemo(() => {
+    if (!data) return null;
+    const idx = data.story.chapters.findIndex((c) => c.id === data.chapter.id);
+    const next = idx >= 0 ? data.story.chapters[idx + 1] : undefined;
+    return next ? `/stories/${data.story.id}/${next.id}` : null;
+  }, [data]);
+
+  // Profile guard
   useEffect(() => {
     if (!profile) router.replace('/onboarding');
   }, [profile, router]);
 
-  // Stop TTS on unmount
+  // Reset all per-chapter state whenever the chapter id changes. This is what
+  // makes "Lanjut Bab Berikutnya" work — clicking it pushes a new URL, and on
+  // the next render this effect resets us back to the narration screen.
+  useEffect(() => {
+    setScreen('narration');
+    setQIdx(0);
+    setSelected(null);
+    setRevealed(false);
+    setCorrectCount(0);
+    setConfetti(false);
+    setResult(null);
+    stopSpeaking();
+    setIsSpeaking(false);
+  }, [params.chapterId]);
+
+  // Stop TTS on unmount (safety net)
   useEffect(() => {
     return () => stopSpeaking();
   }, []);
@@ -109,9 +137,7 @@ function Inner() {
 
   function handleNext() {
     if (qIdx + 1 >= questions.length) {
-      // Quiz done — complete chapter
-      const finalCorrect = correctCount + (selected === currentQ?.correctOptionId ? 0 : 0);
-      // correctCount already updated via handlePick
+      // Last question answered — finalize chapter and show results.
       const res = completeStoryChapter(
         story.id,
         chapter.id,
@@ -130,11 +156,11 @@ function Inner() {
     setRevealed(false);
   }
 
-  // ─── NARRATION SCREEN ───
+  // ─── NARRATION SCREEN (focus mode, X to exit) ───
   if (screen === 'narration') {
     return (
       <FocusShell
-        onExit={() => router.push(`/stories/${story.id}`)}
+        onExit={() => router.push(exitToStoryHref)}
         title={chapter.title}
         coins={wallet.coins}
       >
@@ -195,14 +221,14 @@ function Inner() {
     );
   }
 
-  // ─── QUIZ SCREEN ───
+  // ─── QUIZ SCREEN (focus mode, X to exit) ───
   if (screen === 'quiz' && currentQ) {
     const progress = ((qIdx + (revealed ? 1 : 0)) / questions.length) * 100;
     const isCorrect = revealed && selected === currentQ.correctOptionId;
 
     return (
       <FocusShell
-        onExit={() => router.push(`/stories/${story.id}`)}
+        onExit={() => router.push(exitToStoryHref)}
         title={chapter.title}
         coins={wallet.coins}
       >
@@ -335,9 +361,14 @@ function Inner() {
     const answerCoins = correctCount * COIN_CONSTANTS.COIN_PER_CORRECT;
     const totalEarned = answerCoins + result.chapterBonus + result.storyBonus;
 
+    // Auto-advance flow: if there's a next chapter, the primary button takes
+    // the child to it. On the last chapter (or when story is complete), the
+    // button goes back to the story list.
+    const hasNext = nextChapterHref !== null;
+
     return (
       <FocusShell
-        onExit={() => router.push(`/stories/${story.id}`)}
+        onExit={() => router.push(exitToStoryHref)}
         title="Selesai!"
         coins={wallet.coins}
       >
@@ -396,15 +427,41 @@ function Inner() {
             </motion.div>
           )}
 
-          <button
-            className="btn-primary mt-2 w-full text-xl"
-            onClick={() => {
-              sfx.click();
-              router.push(`/stories/${story.id}`);
-            }}
-          >
-            Kembali ke Cerita 📖
-          </button>
+          {/* Primary action — auto-advance unless this was the last chapter */}
+          {hasNext ? (
+            <button
+              className="btn-primary mt-2 w-full text-xl"
+              onClick={() => {
+                sfx.click();
+                router.push(nextChapterHref!);
+              }}
+            >
+              Bab Berikutnya →
+            </button>
+          ) : (
+            <button
+              className="btn-primary mt-2 w-full text-xl"
+              onClick={() => {
+                sfx.click();
+                router.push(exitToStoryHref);
+              }}
+            >
+              Kembali ke Cerita 📖
+            </button>
+          )}
+
+          {/* Secondary: always allow exit even mid-story */}
+          {hasNext && (
+            <button
+              className="btn-ghost w-full text-base"
+              onClick={() => {
+                sfx.click();
+                router.push(exitToStoryHref);
+              }}
+            >
+              Selesai dulu, kembali ke daftar bab
+            </button>
+          )}
         </motion.div>
       </FocusShell>
     );
@@ -415,7 +472,9 @@ function Inner() {
 }
 
 /**
- * FocusShell — same pattern as quiz play page.
+ * FocusShell — story focus mode container.
+ * Header: X close button on TOP-RIGHT, title centered, coins on left.
+ * No back button — kids stay focused on the chapter until done.
  */
 function FocusShell({
   children,
@@ -432,22 +491,22 @@ function FocusShell({
     <main className="relative flex flex-1 flex-col gap-5 px-4 py-4">
       <FloatingDeco count={8} emojis={['⭐', '✨', '📖', '🌈']} />
       <header className="flex items-center justify-between gap-2">
+        <CoinBadge coins={coins} />
+        <h1 className="font-display text-lg font-extrabold text-slate-800 drop-shadow truncate max-w-[50%]">
+          {title}
+        </h1>
         <motion.button
           type="button"
-          whileTap={{ scale: 0.92 }}
+          whileTap={{ scale: 0.88 }}
           onClick={() => {
             sfx.click();
             onExit();
           }}
-          className="rounded-full bg-white px-4 py-2 font-display text-sm font-bold shadow-kid transition-all hover:bg-slate-50"
-          aria-label="Kembali ke cerita"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl font-extrabold text-slate-600 shadow-kid transition-all hover:bg-rose-50 hover:text-rose-500"
+          aria-label="Tutup"
         >
-          ← Kembali
+          ✕
         </motion.button>
-        <h1 className="font-display text-lg font-extrabold text-slate-800 drop-shadow truncate max-w-[50%]">
-          {title}
-        </h1>
-        <CoinBadge coins={coins} />
       </header>
       {children}
     </main>

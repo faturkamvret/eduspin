@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useAnimationControls } from 'framer-motion';
-import { sfx } from '@/lib/sfx';
+import { sfx, playAudioCue, type AudioCue } from '@/lib/sfx';
 
 type MoodKey = 'happy' | 'cheer' | 'thinking' | 'celebrate' | 'sleepy';
 
@@ -13,7 +13,36 @@ const MOODS: Record<MoodKey, { emoji: string; bubble?: string }> = {
   sleepy: { emoji: '🐨', bubble: 'Z z z...' },
 };
 
-const BEAR_EMOJIS = new Set(['🐻', '🐼', '🧸']);
+/**
+ * Map an emoji to the audio cue that best matches its real animal voice.
+ * Fantasy/non-animal emojis are not in this map — they fall back to a soft click.
+ */
+const EMOJI_TO_CUE: Record<string, AudioCue> = {
+  // Bear-likes share the bear growl recording (closest real voice match).
+  '🐻': 'bearGrowl',
+  '🐼': 'bearGrowl', // panda: same family
+  '🧸': 'bearGrowl', // teddy: pretend bear
+  '🐨': 'bearGrowl', // koala: also bear-shaped
+  // Foxes don't have a recording; we cheat with a dog bark (canid).
+  '🦊': 'bark',
+  '🐶': 'bark',
+  '🐕': 'bark',
+  // Cats
+  '🐱': 'meow',
+  '🐈': 'meow',
+  // Rabbits don't have a real recording, fall back to a soft chirp via pop.
+  '🐰': 'chirp',
+  // Other animals
+  '🐮': 'moo',
+  '🐦': 'chirp',
+  '🦆': 'quack',
+  '🐸': 'ribbit',
+  '🦁': 'lionRoar',
+  '🐘': 'elephant',
+  '🐝': 'buzz',
+  '🐳': 'whaleSong',
+  '🐴': 'neigh',
+};
 
 interface Props {
   mood?: MoodKey;
@@ -41,8 +70,10 @@ export function Mascot({
 
   const handleClick = async () => {
     if (!interactive) return;
-    if (BEAR_EMOJIS.has(visual)) {
-      sfx.bearGrowl();
+    // Play the character-appropriate sound (real recording when available).
+    const cue = EMOJI_TO_CUE[visual];
+    if (cue) {
+      playAudioCue(cue);
     } else {
       sfx.click();
     }
@@ -81,8 +112,8 @@ export function Mascot({
         whileTap={interactive ? { scale: 0.92 } : undefined}
         className={`${size} drop-shadow-lg ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
         aria-label={
-          interactive && BEAR_EMOJIS.has(visual)
-            ? `Maskot ${mood} — ketuk untuk mendengar suara beruang`
+          interactive
+            ? `Maskot ${mood} — ketuk untuk mendengar suaranya`
             : `Maskot ${mood}`
         }
         disabled={!interactive}
