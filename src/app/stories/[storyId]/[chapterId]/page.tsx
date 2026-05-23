@@ -509,18 +509,6 @@ function Inner() {
             </button>
           )}
 
-          {/* Secondary: always allow exit even mid-story */}
-          {hasNext && (
-            <button
-              className="btn-ghost w-full text-base"
-              onClick={() => {
-                sfx.click();
-                router.push(exitToStoryHref);
-              }}
-            >
-              Selesai dulu, kembali ke daftar bab
-            </button>
-          )}
         </motion.div>
       </FocusShell>
     );
