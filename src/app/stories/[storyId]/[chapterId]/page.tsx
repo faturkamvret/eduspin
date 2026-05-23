@@ -398,9 +398,8 @@ function Inner() {
                 className="flex w-full flex-col items-center gap-3"
               >
                 <div
-                  className={`font-display text-2xl font-extrabold ${
-                    isCorrect ? 'text-emerald-600' : 'text-rose-500'
-                  }`}
+                  className={`font-display text-2xl font-extrabold ${isCorrect ? 'text-emerald-600' : 'text-rose-500'
+                    }`}
                 >
                   {isCorrect ? '🌟 Benar! +1 koin 🪙' : '🤗 Yuk lanjut!'}
                 </div>
@@ -521,7 +520,7 @@ function Inner() {
 /**
  * FocusShell — story focus mode container.
  * Header: X close button on TOP-RIGHT, title centered, coins on left.
- * No back button — kids stay focused on the chapter until done.
+ * No back button — kids stay focused on the chapter until done and collect rewards.
  */
 function FocusShell({
   children,
